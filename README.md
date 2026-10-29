@@ -1,7 +1,15 @@
 # spreadless
 
-`spreadless` packages customized builds of dwl and slstatus from pinned
-upstream Git submodules and independent subsystem patch queues.
+`spreadless` is my personal repack of software from the suckless ecosystem.
+It brings together the patches and defaults I use in my own setup.
+
+For now, I only maintain two programs:
+
+- **dwl**: a tiling Wayland compositor.
+- **slstatus**: a small program that supplies system information to the status bar.
+
+Both are packaged with Nix and have Home Manager modules, so you can build them
+and adjust their settings from your Nix configuration.
 
 ## Build
 
