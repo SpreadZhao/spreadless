@@ -76,6 +76,8 @@ The caller sends newline-delimited status text to standard input, for example
 with `slstatus -s`. Every output shows the latest complete line. Each
 line can contain up to 1023 bytes, including markup but excluding the newline.
 Overlong lines are discarded and the previous status is preserved.
+The startup command receives no status information; it starts with standard
+input closed.
 
 The bar supports the community
 [barcolors syntax](https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/barcolors)

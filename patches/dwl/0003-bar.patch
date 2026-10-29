@@ -10,11 +10,14 @@ https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/barcolors
 
 The drawing helper retains its upstream license and attribution in drwl.h.
 ---
- Makefile |   2 +-
- config.h |  49 ++++-
- drwl.h   | 310 ++++++++++++++++++++++++++++++
- dwl.c    | 565 +++++++++++++++++++++++++++++++++++++++++++++++--------
- 4 files changed, 835 insertions(+), 91 deletions(-)
+ Makefile  |   2 +-
+ README.md |  38 ++--
+ config.h  |  49 ++++-
+ drwl.h    | 310 +++++++++++++++++++++++++++++
+ dwl.1     | 120 +++---------
+ dwl.c     | 572 +++++++++++++++++++++++++++++++++++++++++++++---------
+ util.h    |  17 --
+ 7 files changed, 874 insertions(+), 234 deletions(-)
  create mode 100644 drwl.h
 
 diff --git a/Makefile b/Makefile
@@ -30,6 +33,84 @@ index 8304245..09ae285 100644
  DWLCFLAGS = `$(PKG_CONFIG) --cflags $(PKGS)` $(WLR_INCS) $(DWLCPPFLAGS) $(DWLDEVCFLAGS) $(CFLAGS)
  LDLIBS    = `$(PKG_CONFIG) --libs $(PKGS)` $(WLR_LIBS) -lm $(LIBS)
  
+diff --git a/README.md b/README.md
+index fd72785..a82d676 100644
+--- a/README.md
++++ b/README.md
+@@ -34,6 +34,8 @@ version of `wlroots` should target this branch.
+ 
+ ### Building dwl
+ dwl has the following dependencies:
++- fcft
++- pixman
+ - libinput
+ - wayland
+ - wlroots (compiled with the libinput backend)
+@@ -76,10 +78,9 @@ otherwise you need to add yourself in the `seat` group and enable/start the
+ seatd daemon.
+ 
+ When dwl is run with no arguments, it will launch the server and begin handling
+-any shortcuts configured in `config.h`. There is no status bar or other
+-decoration initially; these are instead clients that can be run within the
+-Wayland session. Do note that the default background color is grey. This can be
+-modified in `config.h`.
++any shortcuts configured in `config.h`. A built-in status bar on each output
++shows tags, the layout, the focused window title, and status text supplied on
++standard input. Bar appearance and the background color are set in `config.h`.
+ 
+ If you would like to run a script or command automatically at startup, you can
+ specify the command using the `-s` option. This command will be executed as a
+@@ -102,24 +103,19 @@ automatically, you will need to configure it prior to launching `dwl`, e.g.:
+     mkdir -p $XDG_RUNTIME_DIR
+     dwl
+ 
+-### Status information
++### Status bar
+ 
+-Information about selected layouts, current window title, app-id, and
+-selected/occupied/urgent tags is written to the stdin of the `-s` command (see
+-the `STATUS INFORMATION` section in `_dwl_(1)`).  This information can be used to
+-populate an external status bar with a script that parses the
+-information. Failing to read this information will cause dwl to block, so if you
+-do want to run a startup command that does not consume the status information,
+-you can close standard input with the `<&-` shell redirection, for example:
++The bar reads newline-delimited status text from standard input. For example:
+ 
+-    dwl -s 'foot --server <&-'
++    slstatus -s | dwl -s 'foot --server'
+ 
+-If your startup command is a shell script, you can achieve the same inside the
+-script with the line
++Every output shows the latest complete line. Lines may contain up to 1023 bytes,
++excluding the newline. Overlong lines are discarded and the previous status is
++preserved. The startup command does not receive status information.
+ 
+-    exec <&-
+-
+-To get a list of status bars that work with dwl consult our [wiki].
++Status text supports `^fg(RRGGBB)` and `^bg(RRGGBB)` to change foreground and
++background colors. `^fg()` and `^bg()` restore the normal colors. Invalid markers
++are displayed as text.
+ 
+ ### (Known) Java nonreparenting WM issue
+ Certain IDEs don't display correctly unless an environmental variable for Java AWT
+@@ -141,14 +137,12 @@ sticks to features which are necessary, simple, and straightforward to implement
+ given the base on which it is built. Implemented default features are:
+ 
+ - Any features provided by [dwm]/Xlib: simple window borders, tags, keybindings,
+-  client rules, mouse move/resize. Providing a built-in status bar is an
+-  exception to this goal, to avoid dependencies on font rendering and/or drawing
+-  libraries when an external bar could work well.
++  client rules, mouse move/resize, and a built-in status bar.
+ - Configurable multi-monitor layout support, including position and rotation
+ - Configurable HiDPI/multi-DPI support
+ - Idle-inhibit protocol which lets applications such as mpv disable idle
+   monitoring
+-- Provide information to external status bars via stdout/stdin
++- Read status text from standard input for the built-in bar
+ - Urgency hints via xdg-activate protocol
+ - Support screen lockers via ext-session-lock-v1 protocol
+ - Various Wayland protocols
 diff --git a/config.h b/config.h
 index 768f17c..e98d0e5 100644
 --- a/config.h
@@ -427,8 +508,147 @@ index 0000000..416c73e
 +{
 +	fcft_fini();
 +}
+diff --git a/dwl.1 b/dwl.1
+index 7fee870..c74c05f 100644
+--- a/dwl.1
++++ b/dwl.1
+@@ -111,103 +111,25 @@ Toggle focused window between floating and tiled state.
+ Resize focused window while dragging.
+ Tiled windows will be toggled to the floating state.
+ .El
+-.Sh STATUS INFORMATION
+-.Nm
+-writes its status information to standard output.
+-If the
+-.Fl s
+-option is given, the status information is written to the standard input of the
+-child process instead.
+-.Pp
+-Said information has the following format:
+-.Bd -ragged -offset indent
+-.Ar <monitor>
+-.Ar <component>
+-.Ar <data>
+-.Ed
+-.Pp
+-.Bl -tag -width 11n -offset 0 -compact
+-.It Ar <monitor>
+-is the name given to the output.
+-.It Ar <component>
+-is one of (in order)
+-.Em title ,
+-.Em appid ,
+-.Em fullscreen ,
+-.Em floating ,
+-.Em selmon ,
+-.Em tags ,
+-.Em layout .
+-.It Ar <data>
+-changes depending on
+-.Ar <component> .
+-.Bl -tag -width 10n -compact
+-.It Em title
+-The title of the focused window on
+-.Ar <monitor>
+-or nothing if there is no focused window.
+-.It Em appid
+-The app_id of the focused window on
+-.Ar <monitor>
+-or nothing if there is no focused window.
+-.It Em fullscreen
+-Prints 1 if the focused window on
+-.Ar <monitor>
+-is in fullscreen state, otherwise prints 0. If there is no focused
+-window it prints nothing.
+-.It Em floating
+-Prints 1 if the focused window on
+-.Ar <monitor>
+-is in floating state, otherwise prints 0. If there is no focused
+-window it prints nothing.
+-.It Em selmon
+-Prints 1 if
+-.Ar <monitor>
+-is the selected monitor, otherwise prints 0.
+-.It Em tags
+-Prints four bitmasks in the following order:
+-.Bl -bullet -width 2n -compact
+-.It
+-Occupied tags of
+-.Ar <monitor> .
+-.It
+-Selected tags of
+-.Ar <monitor> .
+-.It
+-Tags of the focused window on
+-.Ar <monitor> .
+-.It
+-Tags where a window on
+-.Ar <monitor>
+-requested activation or has urgency hints.
+-.El
+-The bitmasks are 32-bit unsigned decimal integers.
+-.It Em layout
+-Prints the symbol of the current layout.
+-.El
+-.El
+-.Ss Examples
+-When there is a selected window:
+-.Bd -literal -offset indent
+-HDMI\-A\-1 title \(ti/source/repos/dwl > man \-l dwl.1
+-HDMI\-A\-1 appid footclient
+-HDMI\-A\-1 fullscreen 0
+-HDMI\-A\-1 floating 0
+-HDMI\-A\-1 selmon 1
+-HDMI\-A\-1 tags 271 4 4 0
+-HDMI\-A\-1 layout [T]
+-.Ed
++.Sh STATUS BAR
++The built-in bar on each output displays tags, the layout, the focused window
++title, and status text read from standard input.
++Status text must end with a newline.
++Every output shows the latest complete line.
++Lines longer than 1023 bytes, excluding the newline, are discarded and the
++previous status is preserved.
++The startup command does not receive status information.
+ .Pp
+-When there is no selected window:
+-.Bd -literal -offset indent
+-HDMI\-A\-1 title
+-HDMI\-A\-1 appid
+-HDMI\-A\-1 fullscreen
+-HDMI\-A\-1 floating
+-HDMI\-A\-1 selmon 1
+-HDMI\-A\-1 tags 271 512 0 0
+-HDMI\-A\-1 layout [T]
+-.Ed
++The markers
++.Li ^fg(RRGGBB)
++and
++.Li ^bg(RRGGBB)
++set foreground and background colors using six hexadecimal digits.
++.Li ^fg()
++and
++.Li ^bg()
++restore the normal colors.
++Invalid markers are displayed as text.
+ .Sh ENVIRONMENT
+ These environment variables are used by
+ .Nm :
+@@ -248,7 +170,11 @@ server.
+ Start
+ .Nm
+ with s6 in the background:
+-.Dl dwl \-s \(aqs6\-svscan <&\-\(aq
++.Dl dwl \-s \(aqs6\-svscan\(aq
++.Pp
++Supply status text from
++.Xr slstatus 1 :
++.Dl slstatus \-s | dwl
+ .Sh SEE ALSO
+ .Xr dwm 1 ,
+ .Xr foot 1 ,
 diff --git a/dwl.c b/dwl.c
-index 4cfd0fd..f4a1063 100644
+index 4cfd0fd..2f6ce5f 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -1,11 +1,13 @@
@@ -1010,7 +1230,7 @@ index 4cfd0fd..f4a1063 100644
  void
  powermgrsetmode(struct wl_listener *listener, void *data)
  {
-@@ -2408,22 +2621,14 @@ run(char *startup_cmd)
+@@ -2408,32 +2621,17 @@ run(char *startup_cmd)
  
  	/* Now that the socket exists and the backend is started, run the startup command */
  	if (startup_cmd) {
@@ -1033,17 +1253,19 @@ index 4cfd0fd..f4a1063 100644
 -		close(piperw[0]);
  	}
  
- 	/* Mark stdout as non-blocking to avoid the startup script
-@@ -2433,7 +2638,7 @@ run(char *startup_cmd)
- 	if (fd_set_nonblock(STDOUT_FILENO) < 0)
- 		close(STDOUT_FILENO);
- 
+-	/* Mark stdout as non-blocking to avoid the startup script
+-	 * causing dwl to freeze when a user neither closes stdin
+-	 * nor consumes standard input in his startup script */
+-
+-	if (fd_set_nonblock(STDOUT_FILENO) < 0)
+-		close(STDOUT_FILENO);
+-
 -	printstatus();
 +	drawbars();
  
  	/* At this point the outputs are initialized, choose initial selmon based on
  	 * cursor position, and set default cursor image */
-@@ -2499,7 +2704,7 @@ setfloating(Client *c, int floating)
+@@ -2499,7 +2697,7 @@ setfloating(Client *c, int floating)
  			(p && p->isfullscreen) ? LyrFS
  			: c->isfloating ? LyrFloat : LyrTile]);
  	arrange(c->mon);
@@ -1052,7 +1274,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -2522,7 +2727,7 @@ setfullscreen(Client *c, int fullscreen)
+@@ -2522,7 +2720,7 @@ setfullscreen(Client *c, int fullscreen)
  		resize(c, c->prev, 0);
  	}
  	arrange(c->mon);
@@ -1061,7 +1283,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -2534,9 +2739,9 @@ setlayout(const Arg *arg)
+@@ -2534,9 +2732,9 @@ setlayout(const Arg *arg)
  		selmon->sellt ^= 1;
  	if (arg && arg->v)
  		selmon->lt[selmon->sellt] = (Layout *)arg->v;
@@ -1073,7 +1295,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  /* arg > 1.0 will set mfact absolutely */
-@@ -2609,6 +2814,7 @@ setup(void)
+@@ -2609,6 +2807,7 @@ setup(void)
  	for (i = 0; i < (int)LENGTH(sig); i++)
  		sigaction(sig[i], &sa, NULL);
  
@@ -1081,7 +1303,7 @@ index 4cfd0fd..f4a1063 100644
  	wlr_log_init(log_level, NULL);
  
  	/* The Wayland display is managed by libwayland. It handles accepting
-@@ -2816,6 +3022,11 @@ setup(void)
+@@ -2816,6 +3015,11 @@ setup(void)
  	text_input_manager = wlr_text_input_manager_v3_create(dpy);
  	input_method_relay = input_method_relay_create();
  
@@ -1093,7 +1315,7 @@ index 4cfd0fd..f4a1063 100644
  	/* Make sure XWayland clients don't connect to the parent X server,
  	 * e.g when running in the x11 backend or the wayland backend and the
  	 * compositor has Xwayland support */
-@@ -2840,6 +3051,8 @@ void
+@@ -2840,6 +3044,8 @@ void
  spawn(const Arg *arg)
  {
  	if (fork() == 0) {
@@ -1102,7 +1324,7 @@ index 4cfd0fd..f4a1063 100644
  		dup2(STDERR_FILENO, STDOUT_FILENO);
  		setsid();
  		execvp(((char **)arg->v)[0], (char **)arg->v);
-@@ -2858,6 +3071,141 @@ startdrag(struct wl_listener *listener, void *data)
+@@ -2858,6 +3064,141 @@ startdrag(struct wl_listener *listener, void *data)
  	LISTEN_STATIC(&drag->icon->events.destroy, destroydragicon);
  }
  
@@ -1244,7 +1466,7 @@ index 4cfd0fd..f4a1063 100644
  void
  tag(const Arg *arg)
  {
-@@ -2868,7 +3216,7 @@ tag(const Arg *arg)
+@@ -2868,7 +3209,7 @@ tag(const Arg *arg)
  	sel->tags = arg->ui & TAGMASK;
  	focusclient(focustop(selmon), 1);
  	arrange(selmon);
@@ -1253,7 +1475,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -2913,6 +3261,15 @@ tile(Monitor *m)
+@@ -2913,6 +3254,15 @@ tile(Monitor *m)
  	}
  }
  
@@ -1269,7 +1491,7 @@ index 4cfd0fd..f4a1063 100644
  void
  togglefloating(const Arg *arg)
  {
-@@ -2941,7 +3298,7 @@ toggletag(const Arg *arg)
+@@ -2941,7 +3291,7 @@ toggletag(const Arg *arg)
  	sel->tags = newtags;
  	focusclient(focustop(selmon), 1);
  	arrange(selmon);
@@ -1278,7 +1500,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -2954,7 +3311,7 @@ toggleview(const Arg *arg)
+@@ -2954,7 +3304,7 @@ toggleview(const Arg *arg)
  	selmon->tagset[selmon->seltags] = newtagset;
  	focusclient(focustop(selmon), 1);
  	arrange(selmon);
@@ -1287,7 +1509,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -3019,7 +3376,7 @@ unmapnotify(struct wl_listener *listener, void *data)
+@@ -3019,7 +3369,7 @@ unmapnotify(struct wl_listener *listener, void *data)
  	c->image_capture_source = NULL;
  	wlr_scene_node_destroy(&c->scene->node);
  	client_surface(c)->data = NULL;
@@ -1296,7 +1518,7 @@ index 4cfd0fd..f4a1063 100644
  	motionnotify(0, NULL, 0, 0, 0, 0);
  }
  
-@@ -3122,6 +3479,13 @@ updatemons(struct wl_listener *listener, void *data)
+@@ -3122,6 +3472,13 @@ updatemons(struct wl_listener *listener, void *data)
  		}
  	}
  
@@ -1310,7 +1532,7 @@ index 4cfd0fd..f4a1063 100644
  	/* FIXME: figure out why the cursor image is at 0,0 after turning all
  	 * the monitors on.
  	 * Move the cursor image where it used to be. It does not generate a
-@@ -3132,12 +3496,46 @@ updatemons(struct wl_listener *listener, void *data)
+@@ -3132,12 +3489,46 @@ updatemons(struct wl_listener *listener, void *data)
  	wlr_output_manager_v1_set_configuration(output_mgr, config);
  }
  
@@ -1358,7 +1580,7 @@ index 4cfd0fd..f4a1063 100644
  
  	if (c->foreign_toplevel_handle) {
  		struct wlr_ext_foreign_toplevel_handle_v1_state foreign_toplevel_state = {
-@@ -3159,10 +3557,10 @@ urgent(struct wl_listener *listener, void *data)
+@@ -3159,10 +3550,10 @@ urgent(struct wl_listener *listener, void *data)
  		return;
  
  	c->isurgent = 1;
@@ -1371,7 +1593,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -3175,7 +3573,7 @@ view(const Arg *arg)
+@@ -3175,7 +3566,7 @@ view(const Arg *arg)
  		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
  	focusclient(focustop(selmon), 1);
  	arrange(selmon);
@@ -1380,7 +1602,7 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
-@@ -3219,6 +3617,7 @@ xytonode(double x, double y, struct wlr_surface **psurface,
+@@ -3219,6 +3610,7 @@ xytonode(double x, double y, struct wlr_surface **psurface,
  {
  	struct wlr_scene_node *node;
  	struct wlr_surface *surface = NULL;
@@ -1388,7 +1610,7 @@ index 4cfd0fd..f4a1063 100644
  	int layer;
  
  	for (layer = NUM_LAYERS - 1; !surface && layer >= 0; layer--) {
-@@ -3226,9 +3625,13 @@ xytonode(double x, double y, struct wlr_surface **psurface,
+@@ -3226,9 +3618,13 @@ xytonode(double x, double y, struct wlr_surface **psurface,
  				!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
  			continue;
  
@@ -1405,7 +1627,7 @@ index 4cfd0fd..f4a1063 100644
  	}
  
  	if (psurface) *psurface = surface;
-@@ -3362,10 +3765,10 @@ sethints(struct wl_listener *listener, void *data)
+@@ -3362,10 +3758,10 @@ sethints(struct wl_listener *listener, void *data)
  		return;
  
  	c->isurgent = xcb_icccm_wm_hints_get_urgency(c->surface.xwayland->hints);
@@ -1418,3 +1640,45 @@ index 4cfd0fd..f4a1063 100644
  }
  
  void
+diff --git a/util.h b/util.h
+index 4aaf208..eb43376 100644
+--- a/util.h
++++ b/util.h
+@@ -3,7 +3,6 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <fcntl.h>
+ #include <xkbcommon/xkbcommon.h>
+ 
+ #define MAX(A, B)               ((A) > (B) ? (A) : (B))
+@@ -13,7 +12,6 @@
+ 
+ static void die(const char *fmt, ...);
+ static void *ecalloc(size_t nmemb, size_t size);
+-static int fd_set_nonblock(int fd);
+ xkb_keysym_t keymap_get_one_sym_by_level(struct xkb_keymap *keymap,
+         xkb_keycode_t key, xkb_layout_index_t layout, xkb_level_index_t level);
+ 
+@@ -45,21 +43,6 @@ ecalloc(size_t nmemb, size_t size)
+ 	return p;
+ }
+ 
+-int
+-fd_set_nonblock(int fd) {
+-	int flags = fcntl(fd, F_GETFL);
+-	if (flags < 0) {
+-		perror("fcntl(F_GETFL):");
+-		return -1;
+-	}
+-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+-		perror("fcntl(F_SETFL):");
+-		return -1;
+-	}
+-
+-	return 0;
+-}
+-
+ xkb_keysym_t
+ keymap_get_one_sym_by_level(struct xkb_keymap *keymap, xkb_keycode_t key,
+         xkb_layout_index_t layout, xkb_level_index_t level)

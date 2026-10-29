@@ -39,7 +39,7 @@ index cb95de8..3f67996 100644
  static const unsigned int cursor_size      = 36; /* XCursor size in pixels */
  static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
 diff --git a/dwl.c b/dwl.c
-index 6ef181e..baed924 100644
+index 2b6be12..08253e1 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -413,6 +413,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
@@ -102,7 +102,7 @@ index 6ef181e..baed924 100644
  
  	client_set_size(c, c->geom.width - 2 * c->bw, c->geom.height - 2 * c->bw);
  	client_get_clip(c, &clip);
-@@ -2827,6 +2826,24 @@ run(char *startup_cmd)
+@@ -2820,6 +2819,24 @@ run(char *startup_cmd)
  	wl_display_run(dpy);
  }
  
@@ -127,7 +127,7 @@ index 6ef181e..baed924 100644
  void
  setcursor(struct wl_listener *listener, void *data)
  {
-@@ -2900,7 +2917,7 @@ setfullscreen(Client *c, int fullscreen)
+@@ -2893,7 +2910,7 @@ setfullscreen(Client *c, int fullscreen)
  	c->isfullscreen = fullscreen;
  	if (!c->mon || !client_surface(c)->mapped)
  		return;
@@ -136,7 +136,7 @@ index 6ef181e..baed924 100644
  	client_set_fullscreen(c, fullscreen);
  	wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
  			? LyrFS : c->isfloating ? LyrFloat : LyrTile]);
-@@ -4130,7 +4147,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
+@@ -4123,7 +4140,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
  	c = xsurface->data = ecalloc(1, sizeof(*c));
  	c->surface.xwayland = xsurface;
  	c->type = X11;

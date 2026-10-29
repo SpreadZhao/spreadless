@@ -21,7 +21,7 @@ index 1433ede..cb95de8 100644
 +	{ MODKEY, AxisDown, shiftview, {.i = +1} },
  };
 diff --git a/dwl.c b/dwl.c
-index 81edfdf..6ef181e 100644
+index e3a6817..2b6be12 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -423,6 +423,7 @@ static void setmon(Client *c, Monitor *m, uint32_t newtags);
@@ -42,7 +42,7 @@ index 81edfdf..6ef181e 100644
  			a->func(&a->arg);
  			return;
  		}
-@@ -3243,6 +3245,26 @@ setup(void)
+@@ -3236,6 +3238,26 @@ setup(void)
  #endif
  }
  

@@ -61,7 +61,7 @@ index 1fe87fb..0bb413f 100644
  #define MODKEY WLR_MODIFIER_LOGO
  
 diff --git a/dwl.c b/dwl.c
-index a532e32..e66b377 100644
+index ad3d756..d93c9cd 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -69,6 +69,7 @@
@@ -131,7 +131,7 @@ index a532e32..e66b377 100644
  		}
  	}
  
-@@ -2862,6 +2876,8 @@ setpsel(struct wl_listener *listener, void *data)
+@@ -2855,6 +2869,8 @@ setpsel(struct wl_listener *listener, void *data)
  	 * ignore such requests if they so choose, but in dwl we always honor them
  	 */
  	struct wlr_seat_request_set_primary_selection_event *event = data;
@@ -140,7 +140,7 @@ index a532e32..e66b377 100644
  	wlr_seat_set_primary_selection(seat, event->source, event->serial);
  }
  
-@@ -3040,8 +3056,12 @@ setup(void)
+@@ -3033,8 +3049,12 @@ setup(void)
  	 * Xcursor themes to source cursor images from and makes sure that cursor
  	 * images are available at all scale factors on the screen (necessary for
  	 * HiDPI support). Scaled cursors will be loaded with each output. */
