@@ -43,9 +43,12 @@ Mouse wheel events keep their original delta. Display layouts can be applied by
 startup commands using a Wayland output management client.
 
 By default, focused windows have a white border 2 logical pixels wide.
-Unfocused and fullscreen windows have no border. `SDWL_BORDERPX` and
-`SDWL_UNFOCUSED_BORDERPX` set the focused and unfocused widths (defaults: `2`
-and `0`). Focus changes adjust the content area to fit the border.
+Unfocused windows have no visible border. `SDWL_BORDERPX` and
+`SDWL_UNFOCUSED_BORDERPX` set the visible border widths for focused and
+unfocused windows (defaults: `2` and `0`). Windows reserve the larger width in
+both states so focus changes leave the content size and position unchanged.
+With the defaults, unfocused windows retain a transparent margin 2 logical
+pixels wide. Fullscreen windows have no border or reserved margin.
 `SDWL_SEL_BORDER`, `SDWL_NORM_BORDER` and `SDWL_URG_BORDER` set the border
 colors. Urgent windows also have no border when unfocused with the default
 widths.
