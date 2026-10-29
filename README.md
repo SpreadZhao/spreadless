@@ -65,7 +65,7 @@ programs independently:
     components = [
       { function = "cpu_perc"; format = "%s"; }
       { function = "cpu_temp"; format = "%s"; }
-      { function = "network_icon"; format = "%s"; }
+      { function = "network_icon"; format = "%s"; argument = "eth0"; }
       { function = "battery_icon"; format = "%s"; argument = "BAT0"; }
       { function = "datetime"; format = "%s"; argument = "%H:%M"; }
     ];

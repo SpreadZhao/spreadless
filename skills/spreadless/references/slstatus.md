@@ -8,7 +8,7 @@
 | `output` | Refresh interval, unknown-value text and output length |
 | `battery` | Battery state parsing, percentage and state icons |
 | `temperature` | CPU sensor discovery, temperature icons and colors |
-| `network` | Default-route discovery and interface icons |
+| `network` | Interface link checks and wired/Wi-Fi icons |
 
 ## Packaging
 
@@ -33,10 +33,14 @@ upstream date-and-time component and refreshes every nine seconds.
   color changes at 60°C and 80°C. Set `SLSTATUS_TEMP_COLOR_NORMAL`,
   `SLSTATUS_TEMP_COLOR_WARNING` and `SLSTATUS_TEMP_COLOR_CRITICAL` to six-digit
   hexadecimal strings.
-- `network_icon` takes no argument. It uses the first main-table IPv4 default
-  route, then tries IPv6 if no interface was found. A wireless sysfs entry selects
-  the Wi-Fi icon; other interfaces use the wired icon. If neither route yields
-  an interface, it uses the disconnected icon.
+- `network_icon` requires an interface name, such as `eth0` or `wlan0`. It
+  checks carrier state and reuses the upstream `ipv4` and `ipv6` components to
+  check for an assigned address. A connected interface with an address shows
+  the Wi-Fi icon if it has a wireless sysfs entry, or the wired icon otherwise.
+  An absent interface, disconnected link or missing address shows the
+  disconnected icon. This checks the local connection; it does not probe
+  Internet access or select a default route. Existing configurations must set
+  the component's `argument` to the interface name.
 
 For direct package configuration, `conf` accepts full `config.h` contents or a
 file. `configHeader` accepts header contents or a file containing `SLSTATUS_*`
