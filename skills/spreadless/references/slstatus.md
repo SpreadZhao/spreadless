@@ -24,12 +24,15 @@ upstream date-and-time component and refreshes every nine seconds.
   by a state icon: a charging or discharging level, full battery, not charging,
   or unknown state. Missing or invalid readings use the configured text for
   unknown values (`-` with the Home Manager module).
-- `cpu_temp` takes no argument (`null` in Home Manager, `NULL` in C). It scans
-  hwmon for `coretemp`, `k10temp`, `zenpower` or `cpu_thermal` and reads the first
-  readable `temp1_input`. It rounds to the nearest degree before choosing the
-  thermometer icon and color, then emits barcolors markup. The color changes
-  at 60°C and 80°C. Set `SLSTATUS_TEMP_COLOR_NORMAL`, `SLSTATUS_TEMP_COLOR_WARNING`
-  and `SLSTATUS_TEMP_COLOR_CRITICAL` to six-digit hexadecimal strings.
+- `cpu_temp` accepts a sensor path, such as
+  `/sys/class/hwmon/hwmon0/temp1_input`. With `null` in Home Manager or `NULL`
+  in C, it finds the first readable `temp1_input` from `coretemp`, `k10temp`,
+  `zenpower` or `cpu_thermal`. It caches that path and repeats discovery on the
+  next refresh after a failed reading. It rounds to the nearest degree before
+  choosing the thermometer icon and color, then emits barcolors markup. The
+  color changes at 60°C and 80°C. Set `SLSTATUS_TEMP_COLOR_NORMAL`,
+  `SLSTATUS_TEMP_COLOR_WARNING` and `SLSTATUS_TEMP_COLOR_CRITICAL` to six-digit
+  hexadecimal strings.
 - `network_icon` takes no argument. It uses the first main-table IPv4 default
   route, then tries IPv6 if no interface was found. A wireless sysfs entry selects
   the Wi-Fi icon; other interfaces use the wired icon. If neither route yields
