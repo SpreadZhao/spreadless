@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] feat(rules): configure floating windows
+
+---
+ config.h | 10 ++++++----
+ dwl.c    | 19 ++++++++++++++++++-
+ 2 files changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/config.h b/config.h
+index 5272e7e..1fe87fb 100644
+--- a/config.h
++++ b/config.h
+@@ -74,10 +74,12 @@ static char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+ static int log_level = WLR_ERROR;
+ 
+ static const Rule rules[] = {
+-	/* app_id             title       tags mask     isfloating   monitor */
+-	{ "Gimp_EXAMPLE",     NULL,       0,            1,           -1 }, /* Start on currently visible tags floating, not tiled */
+-	{ "firefox_EXAMPLE",  NULL,       1 << 8,       0,           -1 }, /* Start on ONLY tag "9" */
+-    /* default/example rule: can be changed but cannot be eliminated; at least one rule must exist */
++	/* app_id             title       tags mask     isfloating   monitor  floatw  floath  floaty */
++	{ "dropdown-foot",    NULL,       0,            1,           -1,      0.80f,  0.50f,   0 },
++	{ "lick-foot",        NULL,       0,            1,           -1,      0.75f,  0.60f,  -1 },
++	{ "swayimg-pin",      NULL,       0,            1,           -1,      0.0f,   0.0f,   -1 },
++	{ "satty",            NULL,       0,            1,           -1,      0.0f,   0.0f,   -1 },
++	{ "jetbrains",        "Welcome",  0,            1,           -1,      0.0f,   0.0f,   -1 },
+ };
+ 
+ /* layout(s) */
+diff --git a/dwl.c b/dwl.c
+index 9971229..a532e32 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -276,6 +276,9 @@ typedef struct {
+ 	uint32_t tags;
+ 	int isfloating;
+ 	int monitor;
++	float floatw;
++	float floath;
++	int floaty;
+ } Rule;
+ 
+ typedef struct {
+@@ -575,7 +578,8 @@ applyrules(Client *c)
+ 	/* rule matching */
+ 	const char *appid, *title;
+ 	uint32_t newtags = 0;
+-	int i;
++	int i, floaty = -1;
++	float floatw = 0.0f, floath = 0.0f;
+ 	const Rule *r;
+ 	Monitor *mon = selmon, *m;
+ 
+@@ -586,6 +590,9 @@ applyrules(Client *c)
+ 		if ((!r->title || strstr(title, r->title))
+ 				&& (!r->id || strstr(appid, r->id))) {
+ 			c->isfloating = r->isfloating;
++			floatw = r->floatw;
++			floath = r->floath;
++			floaty = r->floaty;
+ 			newtags |= r->tags;
+ 			i = 0;
+ 			wl_list_for_each(m, &mons, link) {
+@@ -596,6 +603,16 @@ applyrules(Client *c)
+ 	}
+ 
+ 	c->isfloating |= client_is_float_type(c);
++	if (c->isfloating && mon) {
++		if (floatw > 0.0f)
++			c->geom.width = (int)(mon->w.width * floatw);
++		if (floath > 0.0f)
++			c->geom.height = (int)(mon->w.height * floath);
++		c->geom.x = mon->w.x + (mon->w.width - c->geom.width) / 2;
++		c->geom.y = floaty == 0
++			? mon->w.y
++			: mon->w.y + (mon->w.height - c->geom.height) / 2;
++	}
+ 	setmon(c, mon, newtags);
+ }
+ 

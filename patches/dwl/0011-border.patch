@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] feat(border): show borders on focused windows
+
+---
+ config.h |  9 ++++++++-
+ dwl.c    | 22 +++++++++++++++++++---
+ 2 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/config.h b/config.h
+index cb95de8..ef14c75 100644
+--- a/config.h
++++ b/config.h
+@@ -1,6 +1,12 @@
+ #ifndef SDWL_ROOTCOLOR
+ #define SDWL_ROOTCOLOR 0x000000ff
+ #endif
++#ifndef SDWL_BORDERPX
++#define SDWL_BORDERPX 2
++#endif
++#ifndef SDWL_UNFOCUSED_BORDERPX
++#define SDWL_UNFOCUSED_BORDERPX 0
++#endif
+ #ifndef SDWL_NORM_FG
+ #define SDWL_NORM_FG 0xd4d4d4ff
+ #endif
+@@ -54,7 +60,8 @@ static const TabletRule tabletrules[] = { SDWL_TABLET_RULES };
+ /* appearance */
+ static const int sloppyfocus               = 0;  /* focus follows mouse */
+ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
+-static const unsigned int borderpx         = 1;  /* border pixel of windows */
++static const unsigned int borderpx         = SDWL_BORDERPX; /* border width when focused */
++static const unsigned int unfocused_borderpx = SDWL_UNFOCUSED_BORDERPX;
+ static const unsigned int snap             = 32; /* snap pixel */
+ static const unsigned int cursor_size      = 36; /* XCursor size in pixels */
+ static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
+diff --git a/dwl.c b/dwl.c
+index 6ef181e..00a9774 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -413,6 +413,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
+ static void requestmonstate(struct wl_listener *listener, void *data);
+ static void resize(Client *c, struct wlr_box geo, int interact);
+ static void run(char *startup_cmd);
++static void setborderwidth(Client *c, unsigned int bw);
+ static void setcursor(struct wl_listener *listener, void *data);
+ static void setcursorshape(struct wl_listener *listener, void *data);
+ static void setfloating(Client *c, int floating);
+@@ -1477,7 +1478,7 @@ createnotify(struct wl_listener *listener, void *data)
+ 	/* Allocate a Client for this surface */
+ 	c = toplevel->base->data = ecalloc(1, sizeof(*c));
+ 	c->surface.xdg = toplevel->base;
+-	c->bw = borderpx;
++	c->bw = unfocused_borderpx;
+ 
+ 	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
+ 	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
+@@ -1975,6 +1976,7 @@ focusclient(Client *c, int lift)
+ 		struct wlr_surface *s = client_surface(focused_client);
+ 		if (c)
+ 			client_set_border_color(focused_client, (float[])COLOR(colors[SchemeNorm][ColBorder]));
++		setborderwidth(focused_client, unfocused_borderpx);
+ 		if (s && s->mapped)
+ 			client_activate_surface(s, 0);
+ 		focused_client = NULL;
+@@ -1988,6 +1990,9 @@ focusclient(Client *c, int lift)
+ 		return;
+ 	}
+ 
++	if (!client_is_unmanaged(c))
++		setborderwidth(c, borderpx);
++
+ 	/* Change cursor surface */
+ 	motionnotify(0, NULL, 0, 0, 0, 0);
+ 
+@@ -2316,6 +2321,7 @@ mapnotify(struct wl_listener *listener, void *data)
+ 		goto unset_fullscreen;
+ 	}
+ 
++	c->bw = c->isfullscreen ? 0 : unfocused_borderpx;
+ 	for (i = 0; i < 4; i++) {
+ 		c->border[i] = wlr_scene_rect_create(c->scene, 0, 0,
+ 			(float[])COLOR(colors[c->isurgent ? SchemeUrg : SchemeNorm][ColBorder]));
+@@ -2827,6 +2833,16 @@ run(char *startup_cmd)
+ 	wl_display_run(dpy);
+ }
+ 
++void
++setborderwidth(Client *c, unsigned int bw)
++{
++	bw = c->isfullscreen ? 0 : bw;
++	if (c->bw == bw)
++		return;
++	c->bw = bw;
++	resize(c, c->geom, 0);
++}
++
+ void
+ setcursor(struct wl_listener *listener, void *data)
+ {
+@@ -2900,7 +2916,7 @@ setfullscreen(Client *c, int fullscreen)
+ 	c->isfullscreen = fullscreen;
+ 	if (!c->mon || !client_surface(c)->mapped)
+ 		return;
+-	c->bw = fullscreen ? 0 : borderpx;
++	c->bw = fullscreen ? 0 : c == focused_client ? borderpx : unfocused_borderpx;
+ 	client_set_fullscreen(c, fullscreen);
+ 	wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
+ 			? LyrFS : c->isfloating ? LyrFloat : LyrTile]);
+@@ -4130,7 +4146,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
+ 	c = xsurface->data = ecalloc(1, sizeof(*c));
+ 	c->surface.xwayland = xsurface;
+ 	c->type = X11;
+-	c->bw = client_is_unmanaged(c) ? 0 : borderpx;
++	c->bw = client_is_unmanaged(c) ? 0 : unfocused_borderpx;
+ 
+ 	/* Listen to the various events it can emit */
+ 	LISTEN(&xsurface->events.associate, &c->associate, associatex11);

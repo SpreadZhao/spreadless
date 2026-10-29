@@ -1,0 +1,7 @@
+[submodule "dwl"]
+	path = upstream/dwl
+	url = https://codeberg.org/dwl/dwl.git
+	branch = 0.9
+[submodule "slstatus"]
+	path = upstream/slstatus
+	url = https://git.suckless.org/slstatus

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+worktree="${1:?usage: scripts/build/dwl WORKTREE}"
+make -C "$worktree" clean
+make -C "$worktree" dwl XWAYLAND="-DXWAYLAND" XLIBS="xcb xcb-icccm"
+make -C "$worktree" clean

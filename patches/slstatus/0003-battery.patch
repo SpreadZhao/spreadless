@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:28:49 +0800
+Subject: [PATCH] feat(battery): show charge and state icons
+
+Adapt battery icons by sewn while keeping percentage-first output and distinct full, not charging and unknown states:
+https://tools.suckless.org/slstatus/patches/icons/slstatus-icons-1.0.patch
+
+Include drkhsh's upstream battery state buffer fix. A 12-character state needs 13 bytes with its NUL terminator:
+https://git.suckless.org/slstatus/commit/98769dfed7266b5a9959162e03bee1ddfaf5ecb4.html
+
+Co-authored-by: drkhsh <me@drkhsh.at>
+---
+ components/battery.c | 46 ++++++++++++++++++++++++++++++++++++++++++--
+ config.h             |  1 +
+ slstatus.h           |  1 +
+ 3 files changed, 46 insertions(+), 2 deletions(-)
+
+diff --git a/components/battery.c b/components/battery.c
+index 1c753f9..ec298b1 100644
+--- a/components/battery.c
++++ b/components/battery.c
+@@ -1,4 +1,5 @@
+ /* See LICENSE file for copyright and license details. */
++#include <ctype.h>
+ #include <stdio.h>
+ #include <string.h>
+ 
+@@ -49,6 +50,47 @@
+ 		return bprintf("%d", cap_perc);
+ 	}
+ 
++
++	/* Battery levels adapted from sewn's slstatus-icons-1.0.patch. */
++	const char *
++	battery_icon(const char *bat)
++	{
++		static const char *levels[][11] = {
++			{ "󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹" },
++			{ "󰢟", "󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅" },
++		};
++		intmax_t capacity;
++		char path[PATH_MAX], state[64], trailing;
++		const char *icon;
++		size_t length;
++
++		if (!bat || esnprintf(path, sizeof(path), POWER_SUPPLY_CAPACITY, bat) < 0 ||
++		    pscanf(path, "%jd %c", &capacity, &trailing) != 1 ||
++		    capacity < 0 || capacity > 100)
++			return NULL;
++		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0 ||
++		    pscanf(path, "%63[^\n]", state) != 1)
++			return NULL;
++		length = strlen(state);
++		while (length && isspace((unsigned char)state[length - 1]))
++			state[--length] = '\0';
++		if (!length)
++			return NULL;
++
++		if (!strcmp(state, "Charging"))
++			icon = levels[1][capacity / 10];
++		else if (!strcmp(state, "Discharging"))
++			icon = levels[0][capacity / 10];
++		else if (!strcmp(state, "Full"))
++			icon = "󰁹";
++		else if (!strcmp(state, "Not charging"))
++			icon = "󰚥";
++		else
++			icon = "󰁶";
++
++		return bprintf("%jd%s", capacity, icon);
++	}
++
+ 	const char *
+ 	battery_state(const char *bat)
+ 	{
+@@ -62,7 +104,7 @@
+ 			{ "Not charging", "o" },
+ 		};
+ 		size_t i;
+-		char path[PATH_MAX], state[12];
++		char path[PATH_MAX], state[13];
+ 
+ 		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0)
+ 			return NULL;
+@@ -81,7 +123,7 @@
+ 	{
+ 		uintmax_t charge_now, current_now, m, h;
+ 		double timeleft;
+-		char path[PATH_MAX], state[12];
++		char path[PATH_MAX], state[13];
+ 
+ 		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0)
+ 			return NULL;
+diff --git a/config.h b/config.h
+index 11ed15d..2cfd84c 100644
+--- a/config.h
++++ b/config.h
+@@ -12,6 +12,7 @@ static const char unknown_str[] = "-";
+ /*
+  * function            description                     argument (example)
+  *
++ * battery_icon        percentage and state icon       battery name (BAT0)
+  * battery_perc        battery percentage              battery name (BAT0)
+  *                                                     NULL on OpenBSD/FreeBSD
+  * battery_remaining   battery remaining HH:MM         battery name (BAT0)
+diff --git a/slstatus.h b/slstatus.h
+index 394281c..65aba87 100644
+--- a/slstatus.h
++++ b/slstatus.h
+@@ -1,6 +1,7 @@
+ /* See LICENSE file for copyright and license details. */
+ 
+ /* battery */
++const char *battery_icon(const char *bat);
+ const char *battery_perc(const char *);
+ const char *battery_remaining(const char *);
+ const char *battery_state(const char *);

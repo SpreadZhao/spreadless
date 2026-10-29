@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] feat(input): configure keyboard and pointer input
+
+---
+ config.h | 15 +++++++++++++--
+ dwl.c    | 34 +++++++++++++++++++++++++++-------
+ 2 files changed, 40 insertions(+), 9 deletions(-)
+
+diff --git a/config.h b/config.h
+index 1fe87fb..0bb413f 100644
+--- a/config.h
++++ b/config.h
+@@ -51,6 +51,8 @@ static const int sloppyfocus               = 1;  /* focus follows mouse */
+ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
+ static const unsigned int borderpx         = 1;  /* border pixel of windows */
+ static const unsigned int snap             = 32; /* snap pixel */
++static const unsigned int cursor_size      = 36; /* XCursor size in pixels */
++static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
+ static const int showbar                   = 1; /* 0 means no bar */
+ static const int topbar                    = 1; /* 0 means bottom bar */
+ static const char *fonts[]                 = {
+@@ -114,12 +116,16 @@ static const struct xkb_rule_names xkb_rules = {
+ 
+ static const int repeat_rate = 25;
+ static const int repeat_delay = 600;
++static const int numlock_on = 1;
+ 
+ /* Trackpad */
++#ifndef SDWL_TOUCHPAD_SCROLL_FACTOR
++#define SDWL_TOUCHPAD_SCROLL_FACTOR 1.0
++#endif
+ static const int tap_to_click = 1;
+ static const int tap_and_drag = 1;
+ static const int drag_lock = 1;
+-static const int natural_scrolling = 0;
++static const int natural_scrolling = 1;
+ static const int disable_while_typing = 1;
+ static const int left_handed = 0;
+ static const int middle_button_emulation = 0;
+@@ -150,7 +156,7 @@ LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT
+ LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE
+ */
+ static const enum libinput_config_accel_profile accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+-static const double accel_speed = 0.0;
++static const double accel_speed = 0.5;
+ 
+ /* You can choose between:
+ LIBINPUT_CONFIG_TAP_MAP_LRM -- 1/2/3 finger tap maps to left/right/middle
+@@ -158,6 +164,11 @@ LIBINPUT_CONFIG_TAP_MAP_LMR -- 1/2/3 finger tap maps to left/middle/right
+ */
+ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
+ 
++/* Mouse */
++static const int mouse_natural_scrolling = 0;
++static const enum libinput_config_accel_profile mouse_accel_profile = LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
++static const double mouse_accel_speed = 0.0;
++
+ /* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
+ #define MODKEY WLR_MODIFIER_LOGO
+ 
+diff --git a/dwl.c b/dwl.c
+index a532e32..e66b377 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -69,6 +69,7 @@
+ #include <wlr/types/wlr_xdg_output_v1.h>
+ #include <wlr/types/wlr_xdg_shell.h>
+ #include <wlr/interfaces/wlr_buffer.h>
++#include <wlr/interfaces/wlr_keyboard.h>
+ #include <wlr/util/log.h>
+ #include <wlr/util/region.h>
+ #include <xkbcommon/xkbcommon.h>
+@@ -754,7 +755,9 @@ axisnotify(struct wl_listener *listener, void *data)
+ 
+ 	/* Notify the client with pointer focus of the axis event. */
+ 	wlr_seat_pointer_notify_axis(seat,
+-			event->time_msec, event->orientation, event->delta,
++			event->time_msec, event->orientation,
++			event->delta * (event->source == WL_POINTER_AXIS_SOURCE_FINGER
++					? SDWL_TOUCHPAD_SCROLL_FACTOR : 1.0),
+ 			event->delta_discrete, event->source, event->relative_direction);
+ }
+ 
+@@ -1249,6 +1252,13 @@ createkeyboardgroup(void)
+ 		die("failed to compile keymap");
+ 
+ 	wlr_keyboard_set_keymap(&group->wlr_group->keyboard, keymap);
++	if (numlock_on) {
++		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_NUM);
++		if (mod_index != XKB_MOD_INVALID) {
++			uint32_t locked_mods = group->wlr_group->keyboard.modifiers.locked | (1u << mod_index);
++			wlr_keyboard_notify_modifiers(&group->wlr_group->keyboard, 0, 0, locked_mods, 0);
++		}
++	}
+ 	xkb_keymap_unref(keymap);
+ 	xkb_context_unref(context);
+ 
+@@ -1435,8 +1445,9 @@ createpointer(struct wlr_pointer *pointer)
+ 	struct libinput_device *device;
+ 	if (wlr_input_device_is_libinput(&pointer->base)
+ 			&& (device = wlr_libinput_get_device_handle(&pointer->base))) {
++		int is_touchpad = libinput_device_config_tap_get_finger_count(device) > 0;
+ 
+-		if (libinput_device_config_tap_get_finger_count(device)) {
++		if (is_touchpad) {
+ 			libinput_device_config_tap_set_enabled(device, tap_to_click);
+ 			libinput_device_config_tap_set_drag_enabled(device, tap_and_drag);
+ 			libinput_device_config_tap_set_drag_lock_enabled(device, drag_lock);
+@@ -1444,7 +1455,8 @@ createpointer(struct wlr_pointer *pointer)
+ 		}
+ 
+ 		if (libinput_device_config_scroll_has_natural_scroll(device))
+-			libinput_device_config_scroll_set_natural_scroll_enabled(device, natural_scrolling);
++			libinput_device_config_scroll_set_natural_scroll_enabled(device,
++					is_touchpad ? natural_scrolling : mouse_natural_scrolling);
+ 
+ 		if (libinput_device_config_dwt_is_available(device))
+ 			libinput_device_config_dwt_set_enabled(device, disable_while_typing);
+@@ -1465,8 +1477,10 @@ createpointer(struct wlr_pointer *pointer)
+ 			libinput_device_config_send_events_set_mode(device, send_events_mode);
+ 
+ 		if (libinput_device_config_accel_is_available(device)) {
+-			libinput_device_config_accel_set_profile(device, accel_profile);
+-			libinput_device_config_accel_set_speed(device, accel_speed);
++			libinput_device_config_accel_set_profile(device,
++					is_touchpad ? accel_profile : mouse_accel_profile);
++			libinput_device_config_accel_set_speed(device,
++					is_touchpad ? accel_speed : mouse_accel_speed);
+ 		}
+ 	}
+ 
+@@ -2862,6 +2876,8 @@ setpsel(struct wl_listener *listener, void *data)
+ 	 * ignore such requests if they so choose, but in dwl we always honor them
+ 	 */
+ 	struct wlr_seat_request_set_primary_selection_event *event = data;
++	if (!enable_primary_selection)
++		return;
+ 	wlr_seat_set_primary_selection(seat, event->source, event->serial);
+ }
+ 
+@@ -3040,8 +3056,12 @@ setup(void)
+ 	 * Xcursor themes to source cursor images from and makes sure that cursor
+ 	 * images are available at all scale factors on the screen (necessary for
+ 	 * HiDPI support). Scaled cursors will be loaded with each output. */
+-	cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
+-	setenv("XCURSOR_SIZE", "24", 1);
++	{
++		char cursor_size_str[16];
++		snprintf(cursor_size_str, sizeof(cursor_size_str), "%u", cursor_size);
++		cursor_mgr = wlr_xcursor_manager_create(NULL, cursor_size);
++		setenv("XCURSOR_SIZE", cursor_size_str, 1);
++	}
+ 
+ 	/*
+ 	 * wlr_cursor *only* displays an image on screen. It does not move around

@@ -1,0 +1,10 @@
+.direnv/
+.agents/
+.claude/
+.codex/
+.naw/
+.worktree/
+/AGENTS.md
+/CLAUDE.md
+/result
+/result-*

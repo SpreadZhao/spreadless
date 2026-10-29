@@ -1,0 +1,274 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+	cat <<'EOF'
+Usage: spreadless-queue [--repo PATH] <dwl|slstatus> <command> [options]
+
+Commands:
+  checkout [-f|--force]  Create .worktree/PROGRAM and apply patches/PROGRAM/*.patch
+  status                 Show the selected upstream, patches, and worktree commits
+  build                  Compile the selected worktree and remove build artifacts
+  rebase                 Rebase the selected queue onto its current upstream HEAD
+  verify                 Rebase and compile every commit in the selected queue
+  export                 Export one commit per module as NNNN-module.patch
+  clean                  Remove the selected worktree, including uncommitted changes
+
+checkout --force removes the selected worktree before recreating it.
+EOF
+}
+
+die() {
+	printf 'spreadless-queue: %s\n' "$*" >&2
+	exit 1
+}
+
+find_repo_root() {
+	local dir="${1:-$PWD}"
+	dir="$(cd "$dir" && pwd -P)"
+	while [[ "$dir" != / ]]; do
+		if [[ -f "$dir/flake.nix" && -f "$dir/scripts/spreadless-queue" ]]; then
+			printf '%s\n' "$dir"
+			return 0
+		fi
+		dir="$(dirname "$dir")"
+	done
+	return 1
+}
+
+resolve_root() {
+	local explicit_repo="$1"
+	if [[ -n "$explicit_repo" ]]; then
+		find_repo_root "$explicit_repo" || die "not a spreadless repository: $explicit_repo"
+	elif find_repo_root "$PWD"; then
+		return 0
+	elif [[ -n "${NAW_WORKSPACE_ROOT:-}" ]] && find_repo_root "$NAW_WORKSPACE_ROOT"; then
+		return 0
+	else
+		die "could not locate spreadless repository root"
+	fi
+}
+
+ensure_upstream_clean() {
+	[[ -e "$upstream/.git" && -f "$upstream/$program.c" ]] ||
+		die "upstream/$program is missing; initialize the upstream submodules"
+	if [[ -n "$(git -C "$upstream" status --porcelain)" ]]; then
+		die "upstream/$program has uncommitted modifications; keep upstream read-only"
+	fi
+}
+
+ensure_worktree() {
+	[[ -d "$worktree" ]] || die ".worktree/$program does not exist; run 'spreadless-queue $program checkout' first"
+}
+
+worktree_in_progress() {
+	local git_dir
+	git_dir="$(git -C "$worktree" rev-parse --absolute-git-dir)"
+	[[ -d "$git_dir/rebase-merge" || -d "$git_dir/rebase-apply" ]]
+}
+
+ensure_worktree_ready() {
+	ensure_worktree
+	if worktree_in_progress; then
+		die ".worktree/$program has an unfinished rebase or am operation"
+	fi
+	if [[ -n "$(git -C "$worktree" status --porcelain)" ]]; then
+		die ".worktree/$program has uncommitted changes; commit or clean them first"
+	fi
+}
+
+cmd_clean() {
+	if [[ -e "$worktree" ]]; then
+		git -C "$upstream" worktree remove --force "$worktree"
+	fi
+	rmdir "$root/.worktree" 2>/dev/null || true
+	printf 'Removed .worktree/%s\n' "$program"
+}
+
+cmd_checkout() {
+	local force=false
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		-f | --force) force=true ;;
+		*) die "unknown checkout option: $1" ;;
+		esac
+		shift
+	done
+	if [[ -e "$worktree" ]]; then
+		if [[ "$force" == true ]]; then
+			cmd_clean
+		else
+			die ".worktree/$program already exists (pass --force to recreate)"
+		fi
+	fi
+	git -C "$upstream" config rerere.enabled true
+	mkdir -p "$root/.worktree"
+	git -C "$upstream" worktree add --detach "$worktree" HEAD
+	local git_dir
+	git_dir="$(git -C "$worktree" rev-parse --absolute-git-dir)"
+	git -C "$upstream" rev-parse HEAD >"$git_dir/spreadless-base"
+	shopt -s nullglob
+	local patches=("$patch_dir"/*.patch)
+	shopt -u nullglob
+	if [[ ${#patches[@]} -gt 0 ]]; then
+		git -C "$worktree" am --3way --keep-non-patch "${patches[@]}"
+	fi
+	printf 'Applied %d patch(es) for %s\n' "${#patches[@]}" "$program"
+}
+
+cmd_status() {
+	local upstream_head
+	upstream_head="$(git -C "$upstream" rev-parse HEAD)"
+	printf 'Upstream (%s): %s\n' "$program" "$(git -C "$upstream" log -1 --oneline)"
+	shopt -s nullglob
+	local patches=("$patch_dir"/*.patch)
+	shopt -u nullglob
+	printf 'Exported patches (%d):\n' "${#patches[@]}"
+	for patch in "${patches[@]}"; do
+		printf '  %s\n' "$(basename "$patch")"
+	done
+	if [[ -d "$worktree" ]]; then
+		printf '\nWorktree (.worktree/%s):\n' "$program"
+		if worktree_in_progress; then
+			printf '  State: REBASE / AM IN PROGRESS\n'
+		fi
+		git -C "$worktree" status --short
+		git -C "$worktree" log --oneline --reverse "${upstream_head}..HEAD"
+	else
+		printf '\nWorktree: inactive (run "spreadless-queue %s checkout")\n' "$program"
+	fi
+}
+
+cmd_build() {
+	ensure_worktree
+	bash "$build_hook" "$worktree"
+}
+
+cmd_rebase() {
+	ensure_worktree_ready
+	local upstream_head git_dir base_file recorded_base
+	upstream_head="$(git -C "$upstream" rev-parse HEAD)"
+	git_dir="$(git -C "$worktree" rev-parse --absolute-git-dir)"
+	base_file="$git_dir/spreadless-base"
+	[[ -f "$base_file" ]] || die ".worktree/$program has no recorded checkout base"
+	recorded_base="$(cat "$base_file")"
+	git -C "$worktree" rebase --onto "$upstream_head" "$recorded_base" HEAD
+	printf '%s\n' "$upstream_head" >"$base_file"
+	printf 'Rebased %s onto upstream %s\n' "$program" "${upstream_head:0:7}"
+}
+
+cmd_verify() {
+	cmd_rebase
+	local upstream_head build_command
+	upstream_head="$(git -C "$upstream" rev-parse HEAD)"
+	git -C "$worktree" diff --check "${upstream_head}..HEAD"
+	printf -v build_command 'bash %q %q' "$build_hook" "$worktree"
+	git -C "$worktree" rebase --force-rebase -x "$build_command" "$upstream_head"
+	printf 'Verified every commit for %s\n' "$program"
+}
+
+cmd_export() (
+	ensure_worktree_ready
+	local upstream_head
+	upstream_head="$(git -C "$upstream" rev-parse HEAD)"
+	if ! git -C "$worktree" merge-base --is-ancestor "$upstream_head" HEAD; then
+		die "rebase .worktree/$program onto its current upstream HEAD before export"
+	fi
+	git -C "$worktree" diff --check "${upstream_head}..HEAD"
+	local -a commits=() modules=()
+	local commit subject module existing merge_commits commit_list
+	local subject_pattern='^[a-z]+\(([a-z][a-z0-9]*(-[a-z0-9]+)?)\): .+$'
+	merge_commits="$(git -C "$worktree" rev-list --min-parents=2 "${upstream_head}..HEAD")"
+	[[ -z "$merge_commits" ]] || die "merge commits are not supported; keep one linear commit per module"
+	commit_list="$(git -C "$worktree" rev-list --reverse "${upstream_head}..HEAD")"
+	if [[ -n "$commit_list" ]]; then
+		mapfile -t commits <<<"$commit_list"
+	fi
+	for commit in "${commits[@]}"; do
+		subject="$(git -C "$worktree" show -s --format=%s "$commit")"
+		[[ "$subject" =~ $subject_pattern ]] ||
+			die "invalid module scope in '$subject'; use type(module): summary with one or two lowercase words"
+		module="${BASH_REMATCH[1]}"
+		[[ ${#module} -le 24 ]] || die "module name '$module' exceeds 24 characters; review its responsibilities"
+		for existing in "${modules[@]}"; do
+			[[ "$module" != "$existing" ]] || die "duplicate module '$module'; fold changes into its existing commit"
+		done
+		modules+=("$module")
+	done
+	local tmp_dir
+	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/spreadless-queue-export.XXXXXX")"
+	trap 'rm -rf -- "$tmp_dir"' EXIT
+	git -C "$worktree" format-patch --zero-commit --no-signature --no-cover-letter -N \
+		--numbered-files --start-number 1 -o "$tmp_dir" "${upstream_head}..HEAD" >/dev/null
+	shopt -s nullglob
+	local numbered=("$tmp_dir"/*)
+	shopt -u nullglob
+	[[ ${#numbered[@]} -eq ${#commits[@]} ]] || die "generated patch count does not match the module count"
+	local index filename
+	for index in "${!modules[@]}"; do
+		printf -v filename '%04d-%s.patch' "$((index + 1))" "${modules[$index]}"
+		[[ -s "$tmp_dir/$((index + 1))" ]] || die "missing generated patch for module '${modules[$index]}'"
+		mv -- "$tmp_dir/$((index + 1))" "$tmp_dir/$filename"
+	done
+	shopt -s nullglob
+	local generated=("$tmp_dir"/*.patch)
+	shopt -u nullglob
+	mkdir -p "$patch_dir"
+	rm -f "$patch_dir"/*.patch
+	if [[ ${#generated[@]} -gt 0 ]]; then
+		cp -- "${generated[@]}" "$patch_dir/"
+	fi
+	printf 'Exported %d patch(es) to patches/%s/:\n' "${#generated[@]}" "$program"
+	for patch in "${generated[@]}"; do
+		printf '  %s\n' "$(basename "$patch")"
+	done
+)
+
+main() {
+	local explicit_repo=""
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--repo)
+			[[ $# -ge 2 ]] || die "--repo requires a path"
+			explicit_repo="$2"
+			shift 2
+			;;
+		-h | --help | help)
+			usage
+			return 0
+			;;
+		*) break ;;
+		esac
+	done
+	[[ $# -ge 2 ]] || {
+		usage >&2
+		exit 1
+	}
+	local program="$1" subcmd="$2" root upstream worktree patch_dir build_hook
+	shift 2
+	case "$program" in
+	dwl | slstatus) ;;
+	*) die "unknown program: $program (choose dwl or slstatus)" ;;
+	esac
+	root="$(resolve_root "$explicit_repo")"
+	upstream="$root/upstream/$program"
+	worktree="$root/.worktree/$program"
+	patch_dir="$root/patches/$program"
+	build_hook="$root/scripts/build/$program"
+	ensure_upstream_clean
+	if [[ "$subcmd" != checkout && $# -gt 0 ]]; then
+		die "unexpected argument for $subcmd: $1"
+	fi
+	case "$subcmd" in
+	checkout) cmd_checkout "$@" ;;
+	status) cmd_status ;;
+	build) cmd_build ;;
+	rebase) cmd_rebase ;;
+	verify) cmd_verify ;;
+	export) cmd_export ;;
+	clean) cmd_clean ;;
+	*) die "unknown command: $subcmd" ;;
+	esac
+}
+
+main "$@"

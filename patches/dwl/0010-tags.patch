@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] feat(tags): scroll tags under the pointer
+
+---
+ config.h |  3 ++-
+ dwl.c    | 24 +++++++++++++++++++++++-
+ 2 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/config.h b/config.h
+index 1433ede..cb95de8 100644
+--- a/config.h
++++ b/config.h
+@@ -288,5 +288,6 @@ static const Button buttons[] = {
+ };
+ 
+ static const Axis axes[] = {
+-	{ 0, 0, NULL, {0} },
++	{ MODKEY, AxisUp,   shiftview, {.i = -1} },
++	{ MODKEY, AxisDown, shiftview, {.i = +1} },
+ };
+diff --git a/dwl.c b/dwl.c
+index 81edfdf..6ef181e 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -423,6 +423,7 @@ static void setmon(Client *c, Monitor *m, uint32_t newtags);
+ static void setpsel(struct wl_listener *listener, void *data);
+ static void setsel(struct wl_listener *listener, void *data);
+ static void setup(void);
++static void shiftview(const Arg *arg);
+ static void spawn(const Arg *arg);
+ static void startdrag(struct wl_listener *listener, void *data);
+ static int statusin(int fd, unsigned int mask, void *data);
+@@ -790,7 +791,8 @@ axisnotify(struct wl_listener *listener, void *data)
+ 	keyboard = wlr_seat_get_keyboard(seat);
+ 	mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+ 	for (a = axes; a < END(axes); a++) {
+-		if (CLEANMASK(mods) == CLEANMASK(a->mod) && adir == a->dir && a->func) {
++		if (!locked && event->delta != 0 && CLEANMASK(mods) == CLEANMASK(a->mod)
++				&& adir == a->dir && a->func) {
+ 			a->func(&a->arg);
+ 			return;
+ 		}
+@@ -3243,6 +3245,26 @@ setup(void)
+ #endif
+ }
+ 
++void
++shiftview(const Arg *arg)
++{
++	Arg shifted;
++	Monitor *m = xytomon(cursor->x, cursor->y);
++	uint32_t tagset;
++
++	if (!m)
++		return;
++	tagset = m->tagset[m->seltags];
++	if (arg->i > 0)
++		shifted.ui = ((tagset << 1) | (tagset >> (LENGTH(tags) - 1))) & TAGMASK;
++	else
++		shifted.ui = ((tagset >> 1) | (tagset << (LENGTH(tags) - 1))) & TAGMASK;
++	if (shifted.ui == tagset)
++		return;
++	selmon = m;
++	view(&shifted);
++}
++
+ void
+ spawn(const Arg *arg)
+ {
