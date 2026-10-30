@@ -29,7 +29,7 @@ index 630a66e..c1ab1ff 100644
  static const int sloppyfocus               = 1;  /* focus follows mouse */
  static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 diff --git a/dwl.c b/dwl.c
-index 17adb9d..4c25b0d 100644
+index 7615646..b0d4605 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -60,6 +60,8 @@

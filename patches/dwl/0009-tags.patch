@@ -8,7 +8,7 @@ Subject: [PATCH] feat(tags): scroll tags under the pointer
  1 file changed, 23 insertions(+), 1 deletion(-)
 
 diff --git a/dwl.c b/dwl.c
-index 77cc79f..57b5d10 100644
+index b8e95dc..7a90bd5 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -423,6 +423,7 @@ static void setmon(Client *c, Monitor *m, uint32_t newtags);
