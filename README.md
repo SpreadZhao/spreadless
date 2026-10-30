@@ -129,13 +129,17 @@ selected program; both worktrees may be open at once. `--repo PATH` selects a
 repository when running from elsewhere.
 
 Each subsystem has one patch. Fold fixes, extensions and configuration changes
-into its existing commit. Keep related code, declarations, configuration and
-dedicated bindings together. Add a patch only for a new subsystem, after its
-dependencies. Each queue starts with `0001-config.patch`, which initializes
-tracked `config.h`; `config.def.h` remains unchanged.
+into its existing commit. Keep related code, declarations and configuration
+together. The dwl `keys` patch owns all keyboard, mouse-button and scroll
+bindings, modifier keys and spawn commands. Apply it last, after the patches
+that define the functions used by its bindings. Feature patches own those
+functions and their settings. Add a patch only for a new subsystem. Place it
+after its dependencies and, for dwl, before `keys`. Each queue starts with
+`0001-config.patch`, which initializes tracked `config.h`; `config.def.h`
+remains unchanged.
 
 Commit subjects use `type(module): English summary`. Export derives short names
-such as `0003-bar.patch` from the module scope. Names start with a letter, use
+such as `0002-bar.patch` from the module scope. Names start with a letter, use
 one or two lowercase words separated by a hyphen, may include digits and contain
 at most 24 characters. Export rejects invalid or duplicate scopes before
 replacing patches.

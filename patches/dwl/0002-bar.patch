@@ -12,12 +12,12 @@ The drawing helper retains its upstream license and attribution in drwl.h.
 ---
  Makefile  |   2 +-
  README.md |  38 ++--
- config.h  |  43 +++-
+ config.h  |  34 +++-
  drwl.h    | 310 +++++++++++++++++++++++++++++
  dwl.1     | 120 +++---------
  dwl.c     | 572 +++++++++++++++++++++++++++++++++++++++++++++---------
  util.h    |  17 --
- 7 files changed, 869 insertions(+), 233 deletions(-)
+ 7 files changed, 862 insertions(+), 231 deletions(-)
  create mode 100644 drwl.h
 
 diff --git a/Makefile b/Makefile
@@ -112,7 +112,7 @@ index fd72785..a82d676 100644
  - Support screen lockers via ext-session-lock-v1 protocol
  - Various Wayland protocols
 diff --git a/config.h b/config.h
-index 9cc7280..eec246e 100644
+index 13c5322..85f0bab 100644
 --- a/config.h
 +++ b/config.h
 @@ -1,3 +1,16 @@
@@ -163,29 +163,6 @@ index 9cc7280..eec246e 100644
  
  /* logging */
  static int log_level = WLR_ERROR;
-@@ -125,6 +147,7 @@ static const Key keys[] = {
- 	{ MODKEY,                                      XKB_KEY_Return,                spawn,            {.v = termcmd} },
- 	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_Return,                spawn,            SHCMD("footclient -a dropdown-foot") },
- 	{ MODKEY,                                      XKB_KEY_space,                 spawn,            {.v = menucmd} },
-+	{ MODKEY,                                      XKB_KEY_b,                     togglebar,        {0} },
- 	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_l,                     spawn,            SHCMD("swaylock") },
- 	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_l,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/dwl/dwl_lock.sh\"") },
- 	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_a,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/screenshot.sh\"") },
-@@ -184,8 +207,12 @@ static const Key keys[] = {
- };
- 
- static const Button buttons[] = {
--	{ MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
--	{ MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
-+	{ ClkClient,   MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
-+	{ ClkClient,   MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
-+	{ ClkTagBar,   0,      BTN_LEFT,   view,           {0} },
-+	{ ClkTagBar,   0,      BTN_RIGHT,  toggleview,     {0} },
-+	{ ClkTagBar,   MODKEY, BTN_LEFT,   tag,            {0} },
-+	{ ClkTagBar,   MODKEY, BTN_RIGHT,  toggletag,      {0} },
- };
- 
- static const Axis axes[] = {
 diff --git a/drwl.h b/drwl.h
 new file mode 100644
 index 0000000..416c73e
@@ -642,7 +619,7 @@ index 7fee870..c74c05f 100644
  .Xr dwm 1 ,
  .Xr foot 1 ,
 diff --git a/dwl.c b/dwl.c
-index 4cfd0fd..2f6ce5f 100644
+index 4cfd0fd..bdc8adf 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -1,11 +1,13 @@
@@ -691,18 +668,18 @@ index 4cfd0fd..2f6ce5f 100644
  enum { LyrBg, LyrBottom, LyrTile, LyrFloat, LyrTop, LyrFS, LyrUnmanaged, LyrOverlay,
  	LyrIMPopup, LyrBlock, NUM_LAYERS }; /* scene layers */
  enum { AxisUp, AxisRight, AxisDown, AxisLeft };
-+enum { ClkTagBar, ClkLtSymbol, ClkStatus, ClkTitle, ClkClient, ClkRoot }; /* clicks */
++enum { ClkClient, ClkTagBar, ClkLtSymbol, ClkStatus, ClkTitle, ClkRoot }; /* clicks */
  
  typedef union {
  	int i;
-@@ -107,6 +116,7 @@ typedef struct {
- } Axis;
- 
- typedef struct {
-+	unsigned int click;
- 	unsigned int mod;
+@@ -111,6 +120,7 @@ typedef struct {
  	unsigned int button;
  	void (*func)(const Arg *);
+ 	const Arg arg;
++	unsigned int click;
+ } Button;
+ 
+ typedef struct Monitor Monitor;
 @@ -203,10 +213,19 @@ typedef struct {
  	void (*arrange)(Monitor *);
  } Layout;

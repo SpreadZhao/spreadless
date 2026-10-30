@@ -52,7 +52,9 @@
             `.worktree/PROGRAM/` and export to `patches/PROGRAM/`.
           - Maintain one patch per subsystem within each program. Fold changes into the
             owning patch; add a patch only for a new subsystem, after its dependencies.
-            Keep related code, configuration and dedicated bindings together.
+            Keep related code and configuration together. The dwl `keys` patch owns all
+            keyboard, mouse-button and scroll bindings, modifier keys and spawn commands.
+            Apply it last, after the patches that define the binding functions.
           - `0001-config.patch` only initializes tracked `config.h`. Keep `config.def.h`
             unchanged throughout each series. Every commit must compile.
           - Subjects use `type(module): English summary`. Export names use the scope:

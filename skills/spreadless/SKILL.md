@@ -20,8 +20,8 @@ Read [dwl](references/dwl.md) for compositor changes and [slstatus](references/s
 ## Subsystem rules
 
 1. Each program has one patch per subsystem. Find the owner before editing. Fold fixes, extensions and changes to defaults into that patch; do not append follow-up patches for the same subsystem.
-2. Keep subsystem code, declarations, configuration, documentation and dedicated bindings together. Split changes spanning several subsystems, even when they touch the same files. Cross-program changes update each program's queue separately.
-3. Add a patch only for a new subsystem, after its dependencies. Update the selected reference's ownership map when boundaries change. Preserve community authorship, source links and license notices when combining patches.
+2. Keep subsystem code, declarations, configuration and documentation together. The dwl `keys` module owns all keyboard, mouse-button and scroll bindings, modifier keys and spawn commands. Feature modules implement the functions and settings used by those bindings. Apply `keys` last. Split changes spanning several subsystems, even when they touch the same files. Cross-program changes update each program's queue separately.
+3. Add a patch only for a new subsystem. Place it after its dependencies and, for dwl, before `keys`. Update the selected reference's ownership map when boundaries change. Preserve community authorship, source links and license notices when combining patches.
 4. `0001-config.patch` only copies upstream `config.def.h` to tracked `config.h`; dwl also removes its ignore entry. Keep `config.def.h` unchanged throughout the series. Later configuration belongs to the owning subsystem.
 5. Subjects use `type(module): English summary`. Names start with a letter, use one or two lowercase words separated by a hyphen, may include digits, and contain at most 24 characters. Review boundaries rather than truncating long names.
 6. Export derives filenames from module scopes and rejects missing, invalid, overlong or duplicate scopes before replacing patches. Fold fixups before exporting. Every commit must compile.

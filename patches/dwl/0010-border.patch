@@ -12,7 +12,7 @@ same size and position. Fullscreen windows reserve no border space.
  2 files changed, 36 insertions(+), 12 deletions(-)
 
 diff --git a/config.h b/config.h
-index 540f96c..5fcb186 100644
+index 35b2cff..63dfb5a 100644
 --- a/config.h
 +++ b/config.h
 @@ -1,6 +1,12 @@
@@ -39,7 +39,7 @@ index 540f96c..5fcb186 100644
  static const unsigned int cursor_size      = 36; /* XCursor size in pixels */
  static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
 diff --git a/dwl.c b/dwl.c
-index 2b6be12..08253e1 100644
+index 57b5d10..b48d277 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -413,6 +413,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);

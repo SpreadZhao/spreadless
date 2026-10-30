@@ -1,18 +1,19 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SpreadZhao <spreadzhao@outlook.com>
 Date: Thu, 29 Oct 2026 12:18:32 +0800
-Subject: [PATCH] feat(keys): configure shared bindings and commands
+Subject: [PATCH] feat(keys): configure keyboard, mouse and scroll bindings
 
 ---
- config.h | 110 +++++++++++++++++++++++++++++++------------------------
- 1 file changed, 63 insertions(+), 47 deletions(-)
+ config.h | 121 ++++++++++++++++++++++++++++++----------------------
+ dwl.1    | 126 ++++++++++++++++++++++++++++++++++---------------------
+ 2 files changed, 151 insertions(+), 96 deletions(-)
 
 diff --git a/config.h b/config.h
-index 13c5322..9cc7280 100644
+index 63dfb5a..07bd108 100644
 --- a/config.h
 +++ b/config.h
-@@ -104,7 +104,7 @@ LIBINPUT_CONFIG_TAP_MAP_LMR -- 1/2/3 finger tap maps to left/middle/right
- static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
+@@ -182,7 +182,7 @@ static const enum libinput_config_accel_profile mouse_accel_profile = LIBINPUT_C
+ static const double mouse_accel_speed = 0.0;
  
  /* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
 -#define MODKEY WLR_MODIFIER_ALT
@@ -20,7 +21,7 @@ index 13c5322..9cc7280 100644
  
  #define TAGKEYS(KEY,TAG) \
  	{ MODKEY,                    KEY,            view,            {.ui = 1 << TAG} }, \
-@@ -116,62 +116,78 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
+@@ -194,62 +194,85 @@ static const double mouse_accel_speed = 0.0;
  #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
  
  /* commands */
@@ -76,6 +77,7 @@ index 13c5322..9cc7280 100644
 +	{ MODKEY,                                      XKB_KEY_Return,                spawn,            {.v = termcmd} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_Return,                spawn,            SHCMD("footclient -a dropdown-foot") },
 +	{ MODKEY,                                      XKB_KEY_space,                 spawn,            {.v = menucmd} },
++	{ MODKEY,                                      XKB_KEY_b,                     togglebar,        {0} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_l,                     spawn,            SHCMD("swaylock") },
 +	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_l,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/dwl/dwl_lock.sh\"") },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_a,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/screenshot.sh\"") },
@@ -102,7 +104,8 @@ index 13c5322..9cc7280 100644
 +	{ MODKEY,                                      XKB_KEY_l,                     setmfact,         {.f = +0.05f} },
 +
 +	/* --- Layouts & Window States --- */
-+	{ MODKEY,                                      XKB_KEY_m,                     setlayout,        {.v = &layouts[2]} },
++	{ MODKEY,                                      XKB_KEY_m,                     cyclelayout,      {0} },
++	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_h,                     setmfact,         {.f = 1.5f} },
 +	{ MODKEY,                                      XKB_KEY_f,                     togglefullscreen, {0} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_f,                     togglefloating,   {0} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_c,                     killclient,       {0} },
@@ -135,13 +138,192 @@ index 13c5322..9cc7280 100644
  };
  
  static const Button buttons[] = {
- 	{ MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
+-	{ MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
 -	{ MODKEY, BTN_MIDDLE, togglefloating, {0} },
- 	{ MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
+-	{ MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
++	{ MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove}, ClkClient },
++	{ MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize}, ClkClient },
++	{ 0,      BTN_LEFT,   view,           {0}, ClkTagBar },
++	{ 0,      BTN_RIGHT,  toggleview,     {0}, ClkTagBar },
++	{ MODKEY, BTN_LEFT,   tag,            {0}, ClkTagBar },
++	{ MODKEY, BTN_RIGHT,  toggletag,      {0}, ClkTagBar },
  };
  
  static const Axis axes[] = {
 -	{ MODKEY, AxisUp,   spawn, SHCMD("volume-up_EXAMPLE") },
 -	{ MODKEY, AxisDown, spawn, SHCMD("volume-down_EXAMPLE") },
-+	{ 0, 0, NULL, {0} },
++	{ MODKEY, AxisUp,   shiftview, {.i = -1} },
++	{ MODKEY, AxisDown, shiftview, {.i = +1} },
  };
+diff --git a/dwl.1 b/dwl.1
+index c74c05f..73789ff 100644
+--- a/dwl.1
++++ b/dwl.1
+@@ -43,73 +43,101 @@ Users are encouraged to customize
+ .Nm
+ by editing the sources, in particular
+ .Pa config.h .
++The main modifier, Mod, is the Super (Windows) key.
+ The default key bindings are as follows:
+-.Bl -tag -width 20n -offset indent -compact
++.Bl -tag -width 24n -offset indent -compact
+ .It Mod-[1-9]
+-Show only all windows with a tag.
++View a single tag.
+ .It Mod-Ctrl-[1-9]
+-Show all windows with a tag.
++Toggle a tag in the current view.
+ .It Mod-Shift-[1-9]
+-Move window to a single tag.
++Assign the focused window to a single tag.
+ .It Mod-Ctrl-Shift-[1-9]
+-Toggle tag for window.
+-.It Mod-p
+-Spawn
+-.Xr wmenu-run 1 .
++Toggle the focused window's membership in a tag.
++.It Mod-Return
++Open a terminal with
++.Xr footclient 1 .
+ .It Mod-Shift-Return
+-Spawn
+-.Xr foot 1 .
++Open a Foot client with the app ID
++.Li dropdown-foot .
++.It Mod-Space
++Open the
++.Xr fuzzel 1
++application launcher.
+ .It Mod-[jk]
+-Move focus down/up the stack.
++Focus the next or previous window.
+ .It Mod-[id]
+-Increase/decrease number of windows in master area.
++Increase or decrease the number of windows assigned to the master area.
+ .It Mod-[hl]
+-Decrease/increase master area.
+-.It Mod-Return
+-Move window on top of stack or switch top of stack with second window.
++Decrease or increase the master-area width by five percentage points.
++.It Mod-Shift-h
++Set the master-area width to 50 percent.
++.It Mod-a
++Move the focused tiled window to the front of the tiling order.
++If it is already first, move the next tiled window there.
+ .It Mod-Tab
+-Show only all windows with previous tag.
++Return to the previous tag view.
+ .It Mod-Shift-c
+-Close window.
+-.It Mod-t
+-Switch to tabbed layout.
+-.It Mod-f
+-Switch to floating layout.
++Close the focused window.
+ .It Mod-m
+-Switch to monocle layout.
+-.It Mod-Space
+-Switch to previous layout.
+-.It Mod-Shift-Space
+-Toggle floating state of window.
+-.It Mod-e
+-Toggle fullscreen state of window.
++Cycle through Tile, Monocle and Deck layouts.
++.It Mod-f
++Toggle fullscreen for the focused window.
++.It Mod-Shift-f
++Toggle floating for the focused window.
++.It Mod-b
++Show or hide the status bar on the selected output.
++.It Mod-Shift-l
++Lock the session with
++.Xr swaylock 1 .
++.It Mod-Ctrl-Shift-l
++Run the dwl lock script to lock the session and turn off displays.
++.It Mod-Shift-a
++Run the screenshot script.
++.It Mod-Ctrl-Shift-a
++Run the screenshot script with
++.Fl o .
++.It Mod-Shift-v
++Open clipboard history.
++.It Mod-Ctrl-Shift-n
++Open notification history.
++.It Mod-z
++Launch shmooz.
+ .It Mod-0
+-Show all windows.
++View all tags.
+ .It Mod-Shift-0
+-Set all tags for window.
+-.It Mod-,
+-Move focus to previous monitor.
+-.It Mod-.
+-Move focus to next monitor.
+-.It Mod-Shift-,
+-Move window to previous monitor.
+-.It Mod-Shift-.
+-Move window to next monitor.
++Assign the focused window to all tags.
++.It Mod-, and Mod-.
++Focus the output to the left or right.
++.It Mod-Shift-, and Mod-Shift-.
++Move the focused window to the output to the left or right and keep focus on it.
+ .It Mod-Shift-q
+ Quit
+ .Nm .
++.It Mod-Ctrl-[F1-F12]
++Switch to the corresponding Linux virtual terminal.
+ .El
+-These might differ depending on your keyboard layout.
++.Pp
++Dedicated audio keys adjust volume and toggle speaker or microphone mute.
++Dedicated backlight keys adjust display brightness.
++Key names may differ depending on the keyboard layout.
+ .Ss Mouse commands
+-.Bl -tag -width 20n -offset indent -compact
++.Bl -tag -width 24n -offset indent -compact
+ .It Mod-Button1
+-Move focused window while dragging.
+-Tiled windows will be toggled to the floating state.
+-.It Mod-Button2
+-Toggle focused window between floating and tiled state.
++Drag a window and make it floating.
+ .It Mod-Button3
+-Resize focused window while dragging.
+-Tiled windows will be toggled to the floating state.
++Resize a window and make it floating.
++.It Button1 on a tag
++View that tag.
++.It Button3 on a tag
++Toggle that tag in the current view.
++.It Mod-Button1 on a tag
++Assign the focused window to that tag.
++.It Mod-Button3 on a tag
++Toggle the focused window's membership in that tag.
++.It Mod-scroll up , Mod-scroll down
++View the previous or next tag on the output under the pointer.
++Tags wrap at either end; a multi-tag view moves as a group.
+ .El
+ .Sh STATUS BAR
+ The built-in bar on each output displays tags, the layout, the focused window
+@@ -148,6 +176,10 @@ Various variables specific to wlroots.
+ Various variables specific to libxkbcommon.
+ .It Ev XCURSOR_PATH
+ List of directories to search for XCursor themes in.
++.It Ev SCRIPT_HOME
++Directory containing the screenshot, clipboard-history and dwl lock scripts.
++Defaults to
++.Pa $HOME/scripts .
+ .It Ev HOME
+ A directory where there are always dear files there for you.
+ Waiting for you to clean them up.
+@@ -178,7 +210,7 @@ Supply status text from
+ .Sh SEE ALSO
+ .Xr dwm 1 ,
+ .Xr foot 1 ,
+-.Xr wmenu 1 ,
++.Xr fuzzel 1 ,
+ .Xr xkeyboard-config 7
+ .Sh BUGS
+ All of them.

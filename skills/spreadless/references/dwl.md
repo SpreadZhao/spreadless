@@ -5,16 +5,21 @@
 | Module | Responsibility |
 | --- | --- |
 | `config` | Initial tracked copy of the upstream configuration |
-| `keys` | Shared bindings, modifier key, application and script commands |
-| `bar` | Rendering on all outputs, fonts, padding, status input and markup, bar bindings |
+| `bar` | Rendering on all outputs, fonts, padding, status input and markup, click contexts |
 | `theme` | Root, bar and border color defaults and macros |
-| `layout` | Layout algorithms, cycling, default master ratio and dedicated bindings |
+| `layout` | Layout algorithms, cycling and default master ratio |
 | `rules` | Application matching and floating window geometry |
 | `input` | Keyboard, mouse, touchpad, cursor size and primary-selection input policy |
 | `tablet` | Tablet protocol, output mapping and pointer emulation |
 | `focus` | Focus policy and focus after moving clients between outputs |
-| `tags` | Tag scrolling under the pointer and its axis bindings |
+| `tags` | Tag scrolling under the pointer |
 | `border` | Focused, unfocused and fullscreen border widths |
+| `keys` | All keyboard, mouse-button and scroll bindings, modifier keys, application and script commands |
+
+The `keys` patch is last in the dwl queue. It owns the final `keys[]`, `buttons[]`
+and `axes[]` tables in `config.h`. Define feature callbacks in their owning
+patches before binding them in `keys`. Change shortcut assignments only in
+`keys`; feature patches must leave the binding tables unchanged.
 
 ## Packaging
 

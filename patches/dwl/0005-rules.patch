@@ -9,7 +9,7 @@ Subject: [PATCH] feat(rules): configure floating windows
  2 files changed, 24 insertions(+), 5 deletions(-)
 
 diff --git a/config.h b/config.h
-index dfd0efc..5e609aa 100644
+index 4f67e01..36112a9 100644
 --- a/config.h
 +++ b/config.h
 @@ -74,10 +74,12 @@ static char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -30,7 +30,7 @@ index dfd0efc..5e609aa 100644
  
  /* layout(s) */
 diff --git a/dwl.c b/dwl.c
-index 15d2780..ad3d756 100644
+index 5775fa2..6bf3dc7 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -276,6 +276,9 @@ typedef struct {

@@ -9,7 +9,7 @@ Subject: [PATCH] feat(focus): follow windows across outputs
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/config.h b/config.h
-index 7f660f2..8ed4fb9 100644
+index c1ab1ff..35b2cff 100644
 --- a/config.h
 +++ b/config.h
 @@ -52,7 +52,7 @@
@@ -22,7 +22,7 @@ index 7f660f2..8ed4fb9 100644
  static const unsigned int borderpx         = 1;  /* border pixel of windows */
  static const unsigned int snap             = 32; /* snap pixel */
 diff --git a/dwl.c b/dwl.c
-index 44c519b..e3a6817 100644
+index 4c25b0d..77cc79f 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -3412,8 +3412,10 @@ void

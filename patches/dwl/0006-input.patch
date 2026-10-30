@@ -9,7 +9,7 @@ Subject: [PATCH] feat(input): configure keyboard and pointer input
  2 files changed, 40 insertions(+), 9 deletions(-)
 
 diff --git a/config.h b/config.h
-index 5e609aa..047ef39 100644
+index 36112a9..630a66e 100644
 --- a/config.h
 +++ b/config.h
 @@ -51,6 +51,8 @@ static const int sloppyfocus               = 1;  /* focus follows mouse */
@@ -58,10 +58,10 @@ index 5e609aa..047ef39 100644
 +static const double mouse_accel_speed = 0.0;
 +
  /* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
- #define MODKEY WLR_MODIFIER_LOGO
+ #define MODKEY WLR_MODIFIER_ALT
  
 diff --git a/dwl.c b/dwl.c
-index ad3d756..d93c9cd 100644
+index 6bf3dc7..17adb9d 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -69,6 +69,7 @@
