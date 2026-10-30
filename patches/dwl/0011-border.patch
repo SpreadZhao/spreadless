@@ -12,7 +12,7 @@ same size and position. Fullscreen windows reserve no border space.
  2 files changed, 36 insertions(+), 12 deletions(-)
 
 diff --git a/config.h b/config.h
-index cb95de8..3f67996 100644
+index 540f96c..5fcb186 100644
 --- a/config.h
 +++ b/config.h
 @@ -1,6 +1,12 @@

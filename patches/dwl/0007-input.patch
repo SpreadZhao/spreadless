@@ -9,7 +9,7 @@ Subject: [PATCH] feat(input): configure keyboard and pointer input
  2 files changed, 40 insertions(+), 9 deletions(-)
 
 diff --git a/config.h b/config.h
-index 1fe87fb..0bb413f 100644
+index 5e609aa..047ef39 100644
 --- a/config.h
 +++ b/config.h
 @@ -51,6 +51,8 @@ static const int sloppyfocus               = 1;  /* focus follows mouse */

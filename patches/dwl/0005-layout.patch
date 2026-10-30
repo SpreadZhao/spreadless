@@ -9,7 +9,7 @@ Subject: [PATCH] feat(layout): configure tiled layouts
  2 files changed, 59 insertions(+), 2 deletions(-)
 
 diff --git a/config.h b/config.h
-index af32c60..5272e7e 100644
+index 36b0f52..dfd0efc 100644
 --- a/config.h
 +++ b/config.h
 @@ -86,6 +86,7 @@ static const Layout layouts[] = {
@@ -29,16 +29,16 @@ index af32c60..5272e7e 100644
  	/* default monitor rule: can be changed but cannot be eliminated; at least one monitor rule must exist */
  };
  
-@@ -211,7 +212,8 @@ static const Key keys[] = {
+@@ -204,7 +205,8 @@ static const Key keys[] = {
+ 	{ MODKEY,                                      XKB_KEY_l,                     setmfact,         {.f = +0.05f} },
  
  	/* --- Layouts & Window States --- */
- 	{ MODKEY,                                      XKB_KEY_t,                     setlayout,        {.v = &layouts[0]} },
 -	{ MODKEY,                                      XKB_KEY_m,                     setlayout,        {.v = &layouts[2]} },
 +	{ MODKEY,                                      XKB_KEY_m,                     cyclelayout,      {0} },
-+	{ MODKEY,                                      XKB_KEY_u,                     setlayout,        {.v = &layouts[3]} },
++	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_h,                     setmfact,         {.f = 1.5f} },
  	{ MODKEY,                                      XKB_KEY_f,                     togglefullscreen, {0} },
  	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_f,                     togglefloating,   {0} },
- 	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_space,                 togglefloating,   {0} },
+ 	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_c,                     killclient,       {0} },
 diff --git a/dwl.c b/dwl.c
 index 2f6ce5f..15d2780 100644
 --- a/dwl.c

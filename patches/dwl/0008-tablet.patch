@@ -13,7 +13,7 @@ https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/tablet-input
  2 files changed, 299 insertions(+), 1 deletion(-)
 
 diff --git a/config.h b/config.h
-index 0bb413f..bd65429 100644
+index 047ef39..7f660f2 100644
 --- a/config.h
 +++ b/config.h
 @@ -46,6 +46,11 @@

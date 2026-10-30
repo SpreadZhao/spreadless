@@ -9,10 +9,10 @@ Subject: [PATCH] feat(tags): scroll tags under the pointer
  2 files changed, 25 insertions(+), 2 deletions(-)
 
 diff --git a/config.h b/config.h
-index 1433ede..cb95de8 100644
+index 8ed4fb9..540f96c 100644
 --- a/config.h
 +++ b/config.h
-@@ -288,5 +288,6 @@ static const Button buttons[] = {
+@@ -266,5 +266,6 @@ static const Button buttons[] = {
  };
  
  static const Axis axes[] = {

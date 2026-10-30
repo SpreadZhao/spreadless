@@ -56,14 +56,26 @@ widths.
 The default tiled layout gives two tiled windows equal widths on each output.
 With more windows, the master area occupies half the width and the stack shares
 the other half. `Super+H` and `Super+L` adjust this ratio for the selected output.
+`Super+Shift+H` sets it to 50%. `Super+I` increases the number of windows
+assigned to the master area; `Super+D` decreases it.
 
 `Super+M` cycles through Tile (`[]=`), Monocle (`[M]`) and Deck (`[D]`) on the
-selected output. `Super+T` selects Tile and `Super+U` selects Deck.
-`Super+Space` opens fuzzel; `Super+Shift+Space` toggles floating for the focused
-window.
+selected output. `Super+F` toggles fullscreen for the focused window;
+`Super+Shift+F` toggles floating. `Super+A` moves the focused tiled window to
+the front of the tiling order. If it is already first, the next tiled window
+takes its place.
 
-`Super+Shift+,` and `Super+Shift+.` move the focused window to the adjacent
-output and keep keyboard focus on it.
+`Super+J` and `Super+K` select the next or previous window. `Super+,` and
+`Super+.` select the adjacent output. `Super+Shift+,` and `Super+Shift+.` move
+the focused window to that output and keep keyboard focus on it.
+
+`Super+1` through `Super+9` select tags. Adding Ctrl toggles a tag in the view;
+adding Shift assigns the focused window to that tag; adding both toggles the
+window's membership. `Super+Tab` returns to the previous tag view. `Super+0`
+views all tags, and `Super+Shift+0` assigns the focused window to all tags.
+
+`Super+left mouse button` drags a window, and `Super+right mouse button` resizes
+it. Both operations make the window floating.
 
 `Super+mouse wheel up` switches to the previous tag; `Super+mouse wheel down`
 switches to the next on the output under the pointer. Tags wrap at either end,
@@ -71,6 +83,10 @@ including empty tags. If multiple tags are selected, the whole selection moves
 by one tag.
 
 ## Status bar
+
+`Super+B` shows or hides the bar on the selected output. Left-clicking a tag
+selects it; right-clicking toggles it in the view. With Super held, left-clicking
+assigns the focused window to the tag, and right-clicking toggles its membership.
 
 The caller sends newline-delimited status text to standard input, for example
 with `slstatus -s`. Every output shows the latest complete line. Each
@@ -115,10 +131,21 @@ to dwl 0.9 and wlroots 0.20.
 
 ## Desktop tools
 
-The default bindings launch Foot and fuzzel. `Super+Shift+A` runs
-`$SCRIPT_HOME/util/screenshot.sh`; `Super+Ctrl+Shift+A` runs it with `-o`.
+`Super+Return` opens a Foot client. `Super+Shift+Return` opens one with the
+`dropdown-foot` app ID. `Super+Space` opens fuzzel.
+
+`Super+Shift+L` locks with swaylock. `Super+Ctrl+Shift+L` runs
+`$SCRIPT_HOME/dwl/dwl_lock.sh` to lock and turn off the displays.
+
+`Super+Shift+A` runs `$SCRIPT_HOME/util/screenshot.sh`;
+`Super+Ctrl+Shift+A` runs it with `-o`.
 `Super+Shift+V` runs `$SCRIPT_HOME/util/clipboard_history.sh`, and `Super+Z`
 launches shmooz. `SCRIPT_HOME` defaults to `$HOME/scripts`. The caller supplies
 these scripts and applications.
+
+`Super+Shift+C` closes the focused window, and `Super+Shift+Q` exits dwl.
+`Super+Ctrl+F1` through `Super+Ctrl+F12` select Linux virtual terminals.
+Dedicated keys adjust volume and display brightness or toggle speaker and
+microphone mute.
 
 Windows with app IDs `swayimg-pin` and `satty` open as floating windows.

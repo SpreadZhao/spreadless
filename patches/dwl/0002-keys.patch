@@ -4,11 +4,11 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] feat(keys): configure shared bindings and commands
 
 ---
- config.h | 126 +++++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 80 insertions(+), 46 deletions(-)
+ config.h | 110 +++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 63 insertions(+), 47 deletions(-)
 
 diff --git a/config.h b/config.h
-index 13c5322..768f17c 100644
+index 13c5322..9cc7280 100644
 --- a/config.h
 +++ b/config.h
 @@ -104,7 +104,7 @@ LIBINPUT_CONFIG_TAP_MAP_LMR -- 1/2/3 finger tap maps to left/middle/right
@@ -20,7 +20,7 @@ index 13c5322..768f17c 100644
  
  #define TAGKEYS(KEY,TAG) \
  	{ MODKEY,                    KEY,            view,            {.ui = 1 << TAG} }, \
-@@ -116,51 +116,86 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
+@@ -116,62 +116,78 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
  #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
  
  /* commands */
@@ -76,8 +76,8 @@ index 13c5322..768f17c 100644
 +	{ MODKEY,                                      XKB_KEY_Return,                spawn,            {.v = termcmd} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_Return,                spawn,            SHCMD("footclient -a dropdown-foot") },
 +	{ MODKEY,                                      XKB_KEY_space,                 spawn,            {.v = menucmd} },
-+	{ MODKEY,                                      XKB_KEY_d,                     spawn,            SHCMD("swaylock") },
-+	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_d,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/dwl/dwl_lock.sh\"") },
++	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_l,                     spawn,            SHCMD("swaylock") },
++	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_l,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/dwl/dwl_lock.sh\"") },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_a,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/screenshot.sh\"") },
 +	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_a,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/screenshot.sh\" -o") },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_v,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/clipboard_history.sh\"") },
@@ -95,40 +95,24 @@ index 13c5322..768f17c 100644
 +	/* --- Window Focus & Stack Management (Native dwl) --- */
 +	{ MODKEY,                                      XKB_KEY_j,                     focusstack,       {.i = +1} },
 +	{ MODKEY,                                      XKB_KEY_k,                     focusstack,       {.i = -1} },
-+	{ MODKEY,                                      XKB_KEY_Down,                  focusstack,       {.i = +1} },
-+	{ MODKEY,                                      XKB_KEY_Up,                    focusstack,       {.i = -1} },
-+	{ MODKEY,                                      XKB_KEY_BackSpace,             zoom,             {0} },
++	{ MODKEY,                                      XKB_KEY_a,                     zoom,             {0} },
 +	{ MODKEY,                                      XKB_KEY_i,                     incnmaster,       {.i = +1} },
-+	{ MODKEY,                                      XKB_KEY_p,                     incnmaster,       {.i = -1} },
++	{ MODKEY,                                      XKB_KEY_d,                     incnmaster,       {.i = -1} },
 +	{ MODKEY,                                      XKB_KEY_h,                     setmfact,         {.f = -0.05f} },
 +	{ MODKEY,                                      XKB_KEY_l,                     setmfact,         {.f = +0.05f} },
-+	{ MODKEY,                                      XKB_KEY_Left,                  setmfact,         {.f = -0.05f} },
-+	{ MODKEY,                                      XKB_KEY_Right,                 setmfact,         {.f = +0.05f} },
-+	{ MODKEY,                                      XKB_KEY_minus,                 setmfact,         {.f = -0.05f} },
-+	{ MODKEY,                                      XKB_KEY_equal,                 setmfact,         {.f = +0.05f} },
 +
 +	/* --- Layouts & Window States --- */
-+	{ MODKEY,                                      XKB_KEY_t,                     setlayout,        {.v = &layouts[0]} },
 +	{ MODKEY,                                      XKB_KEY_m,                     setlayout,        {.v = &layouts[2]} },
 +	{ MODKEY,                                      XKB_KEY_f,                     togglefullscreen, {0} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_f,                     togglefloating,   {0} },
-+	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_space,                 togglefloating,   {0} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_c,                     killclient,       {0} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_q,                     quit,             {0} },
 +
 +	/* --- Multi-Monitor Focus & Window Movement --- */
 +	{ MODKEY,                                      XKB_KEY_comma,                 focusmon,         {.i = WLR_DIRECTION_LEFT} },
 +	{ MODKEY,                                      XKB_KEY_period,                focusmon,         {.i = WLR_DIRECTION_RIGHT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL,                    XKB_KEY_h,                     focusmon,         {.i = WLR_DIRECTION_LEFT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL,                    XKB_KEY_l,                     focusmon,         {.i = WLR_DIRECTION_RIGHT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL,                    XKB_KEY_Left,                  focusmon,         {.i = WLR_DIRECTION_LEFT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL,                    XKB_KEY_Right,                 focusmon,         {.i = WLR_DIRECTION_RIGHT} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_comma,                 tagmon,           {.i = WLR_DIRECTION_LEFT} },
 +	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_period,                tagmon,           {.i = WLR_DIRECTION_RIGHT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_h,                     tagmon,           {.i = WLR_DIRECTION_LEFT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_l,                     tagmon,           {.i = WLR_DIRECTION_RIGHT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_Left,                  tagmon,           {.i = WLR_DIRECTION_LEFT} },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_Right,                 tagmon,           {.i = WLR_DIRECTION_RIGHT} },
 +
 +	/* --- Tags --- */
 +	{ MODKEY,                                      XKB_KEY_Tab,                   view,             {0} },
@@ -144,13 +128,16 @@ index 13c5322..768f17c 100644
 +	TAGKEYS(                                       XKB_KEY_8,                     7),
 +	TAGKEYS(                                       XKB_KEY_9,                     8),
 +
-+	/* --- VT Switching & Emergency Exit --- */
-+	{ WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,          XKB_KEY_BackSpace,             quit,             {0} },
-+#define CHVT(n) { WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT, XKB_KEY_F##n, chvt, {.ui = (n)} }
++	/* --- Virtual Terminals --- */
++#define CHVT(n) { MODKEY|WLR_MODIFIER_CTRL, XKB_KEY_F##n, chvt, {.ui = (n)} }
  	CHVT(1), CHVT(2), CHVT(3), CHVT(4), CHVT(5), CHVT(6),
  	CHVT(7), CHVT(8), CHVT(9), CHVT(10), CHVT(11), CHVT(12),
  };
-@@ -172,6 +207,5 @@ static const Button buttons[] = {
+ 
+ static const Button buttons[] = {
+ 	{ MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
+-	{ MODKEY, BTN_MIDDLE, togglefloating, {0} },
+ 	{ MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
  };
  
  static const Axis axes[] = {
