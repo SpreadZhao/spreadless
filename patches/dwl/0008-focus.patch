@@ -22,10 +22,10 @@ index c1ab1ff..35b2cff 100644
  static const unsigned int borderpx         = 1;  /* border pixel of windows */
  static const unsigned int snap             = 32; /* snap pixel */
 diff --git a/dwl.c b/dwl.c
-index b0d4605..b8e95dc 100644
+index 01581be..2b7fb10 100644
 --- a/dwl.c
 +++ b/dwl.c
-@@ -3412,8 +3412,10 @@ void
+@@ -3417,8 +3417,10 @@ void
  tagmon(const Arg *arg)
  {
  	Client *sel = focustop(selmon);

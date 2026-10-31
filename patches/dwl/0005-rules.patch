@@ -30,7 +30,7 @@ index 4f67e01..36112a9 100644
  
  /* layout(s) */
 diff --git a/dwl.c b/dwl.c
-index 26b6137..45a1097 100644
+index 9b47ae6..12dff2a 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -276,6 +276,9 @@ typedef struct {

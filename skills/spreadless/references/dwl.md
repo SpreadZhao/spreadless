@@ -5,7 +5,7 @@
 | Module | Responsibility |
 | --- | --- |
 | `config` | Initial tracked copy of the upstream configuration |
-| `bar` | Rendering on all outputs, fonts, padding, status input and markup, click contexts |
+| `bar` | Rendering on all outputs, scene output teardown, fonts, padding, status input and markup, click contexts |
 | `theme` | Root, bar and border color defaults and macros |
 | `layout` | Layout algorithms, cycling and default master ratio |
 | `rules` | Application matching and floating window geometry |

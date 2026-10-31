@@ -30,7 +30,7 @@ index 651dba4..4f67e01 100644
  };
  
 diff --git a/dwl.c b/dwl.c
-index 12db97f..26b6137 100644
+index 3690782..9b47ae6 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -327,6 +327,8 @@ static void createpopup(struct wl_listener *listener, void *data);
@@ -42,7 +42,7 @@ index 12db97f..26b6137 100644
  static void destroydecoration(struct wl_listener *listener, void *data);
  static void destroydragicon(struct wl_listener *listener, void *data);
  static void destroyidleinhibitor(struct wl_listener *listener, void *data);
-@@ -1510,6 +1512,59 @@ cursorwarptohint(void)
+@@ -1515,6 +1517,59 @@ cursorwarptohint(void)
  	}
  }
  
