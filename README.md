@@ -65,7 +65,6 @@ programs independently:
     components = [
       { function = "cpu_perc"; format = "%s"; }
       { function = "cpu_temp"; format = "%s"; }
-      { function = "network_icon"; format = "%s"; argument = "eth0"; }
       { function = "battery_icon"; format = "%s"; argument = "BAT0"; }
       { function = "datetime"; format = "%s"; argument = "%H:%M"; }
     ];
@@ -91,9 +90,8 @@ configuration through `conf`.
 The [dwl reference](skills/spreadless/references/dwl.md) describes layouts,
 bindings, borders, the status bar and tablet support. The
 [slstatus reference](skills/spreadless/references/slstatus.md) describes native
-battery, temperature and network components. slstatus writes newline-delimited
-text with `-s`; dwl reads status lines from standard input and supports its
-barcolors markup.
+battery and temperature components. slstatus writes newline-delimited text with
+`-s`; dwl reads status lines from standard input and supports its barcolors markup.
 
 ## Repository layout
 
