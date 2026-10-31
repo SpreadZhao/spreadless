@@ -13,6 +13,7 @@
 | `tablet` | Tablet protocol, output mapping and pointer emulation |
 | `focus` | Focus policy and focus after moving clients between outputs |
 | `border` | Focused, unfocused and fullscreen border widths |
+| `monitor` | Window output ownership and restoration after output reconnection |
 | `keys` | All keyboard, mouse-button and scroll bindings, modifier keys, application and script commands |
 
 The `keys` patch is last in the dwl queue. It owns the final `keys[]`, `buttons[]`
@@ -80,6 +81,19 @@ views all tags, and `Super+Shift+0` assigns the focused window to all tags.
 
 `Super+left mouse button` drags a window, and `Super+right mouse button` resizes
 it. Both operations make the window floating.
+
+## Output reconnection
+
+Windows remember their output by connector name, such as `DP-1`. If an output
+disconnects, its windows move to an available output and return when the original
+output is enabled again. Windows keep their tags, and the output's selected tag
+view is restored. Floating windows retain their size and position relative to the
+output as output profiles move it. Keyboard and mouse moves update the window's
+remembered output.
+
+This implementation adapts the community
+[restore-monitor patch](https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/restore-monitor)
+by Eldar Yusupov and 6z7y to dwl 0.9 and wlroots 0.20.
 
 ## Status bar
 
