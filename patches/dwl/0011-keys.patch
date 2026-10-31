@@ -9,7 +9,7 @@ Subject: [PATCH] feat(keys): configure keyboard, mouse and scroll bindings
  2 files changed, 151 insertions(+), 96 deletions(-)
 
 diff --git a/config.h b/config.h
-index 63dfb5a..07bd108 100644
+index 63dfb5a..5bbe9e7 100644
 --- a/config.h
 +++ b/config.h
 @@ -182,7 +182,7 @@ static const enum libinput_config_accel_profile mouse_accel_profile = LIBINPUT_C
@@ -97,7 +97,7 @@ index 63dfb5a..07bd108 100644
 +	/* --- Window Focus & Stack Management (Native dwl) --- */
 +	{ MODKEY,                                      XKB_KEY_j,                     focusstack,       {.i = +1} },
 +	{ MODKEY,                                      XKB_KEY_k,                     focusstack,       {.i = -1} },
-+	{ MODKEY,                                      XKB_KEY_a,                     zoom,             {0} },
++	{ MODKEY,                                      XKB_KEY_BackSpace,             zoom,             {0} },
 +	{ MODKEY,                                      XKB_KEY_i,                     incnmaster,       {.i = +1} },
 +	{ MODKEY,                                      XKB_KEY_d,                     incnmaster,       {.i = -1} },
 +	{ MODKEY,                                      XKB_KEY_h,                     setmfact,         {.f = -0.05f} },
@@ -156,7 +156,7 @@ index 63dfb5a..07bd108 100644
 +	{ MODKEY, AxisDown, shiftview, {.i = +1} },
  };
 diff --git a/dwl.1 b/dwl.1
-index c74c05f..73789ff 100644
+index c74c05f..cda593b 100644
 --- a/dwl.1
 +++ b/dwl.1
 @@ -43,73 +43,101 @@ Users are encouraged to customize
@@ -207,7 +207,7 @@ index c74c05f..73789ff 100644
 +Decrease or increase the master-area width by five percentage points.
 +.It Mod-Shift-h
 +Set the master-area width to 50 percent.
-+.It Mod-a
++.It Mod-Backspace
 +Move the focused tiled window to the front of the tiling order.
 +If it is already first, move the next tiled window there.
  .It Mod-Tab

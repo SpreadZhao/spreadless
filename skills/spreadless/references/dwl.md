@@ -66,8 +66,8 @@ assigned to the master area; `Super+D` decreases it.
 
 `Super+M` cycles through Tile (`[]=`), Monocle (`[M]`) and Deck (`[D]`) on the
 selected output. `Super+F` toggles fullscreen for the focused window;
-`Super+Shift+F` toggles floating. `Super+A` moves the focused tiled window to
-the front of the tiling order. If it is already first, the next tiled window
+`Super+Shift+F` toggles floating. `Super+Backspace` moves the focused tiled window
+to the front of the tiling order. If it is already first, the next tiled window
 takes its place.
 
 `Super+J` and `Super+K` select the next or previous window. `Super+,` and
