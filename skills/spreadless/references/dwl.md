@@ -12,7 +12,6 @@
 | `input` | Keyboard, mouse, touchpad, cursor size and primary-selection input policy |
 | `tablet` | Tablet protocol, output mapping and pointer emulation |
 | `focus` | Focus policy and focus after moving clients between outputs |
-| `tags` | Tag scrolling under the pointer |
 | `border` | Focused, unfocused and fullscreen border widths |
 | `keys` | All keyboard, mouse-button and scroll bindings, modifier keys, application and script commands |
 
@@ -81,11 +80,6 @@ views all tags, and `Super+Shift+0` assigns the focused window to all tags.
 
 `Super+left mouse button` drags a window, and `Super+right mouse button` resizes
 it. Both operations make the window floating.
-
-`Super+mouse wheel up` switches to the previous tag; `Super+mouse wheel down`
-switches to the next on the output under the pointer. Tags wrap at either end,
-including empty tags. If multiple tags are selected, the whole selection moves
-by one tag.
 
 ## Status bar
 

@@ -39,7 +39,7 @@ index 35b2cff..63dfb5a 100644
  static const unsigned int cursor_size      = 36; /* XCursor size in pixels */
  static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
 diff --git a/dwl.c b/dwl.c
-index 96d8a0d..7fd5a51 100644
+index 2b7fb10..153aed4 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -413,6 +413,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
@@ -50,7 +50,7 @@ index 96d8a0d..7fd5a51 100644
  static void setcursor(struct wl_listener *listener, void *data);
  static void setcursorshape(struct wl_listener *listener, void *data);
  static void setfloating(Client *c, int floating);
-@@ -1482,7 +1483,7 @@ createnotify(struct wl_listener *listener, void *data)
+@@ -1480,7 +1481,7 @@ createnotify(struct wl_listener *listener, void *data)
  	/* Allocate a Client for this surface */
  	c = toplevel->base->data = ecalloc(1, sizeof(*c));
  	c->surface.xdg = toplevel->base;
@@ -59,7 +59,7 @@ index 96d8a0d..7fd5a51 100644
  
  	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
  	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
-@@ -1980,6 +1981,7 @@ focusclient(Client *c, int lift)
+@@ -1978,6 +1979,7 @@ focusclient(Client *c, int lift)
  		struct wlr_surface *s = client_surface(focused_client);
  		if (c)
  			client_set_border_color(focused_client, (float[])COLOR(colors[SchemeNorm][ColBorder]));
@@ -67,7 +67,7 @@ index 96d8a0d..7fd5a51 100644
  		if (s && s->mapped)
  			client_activate_surface(s, 0);
  		focused_client = NULL;
-@@ -2004,8 +2006,10 @@ focusclient(Client *c, int lift)
+@@ -2002,8 +2004,10 @@ focusclient(Client *c, int lift)
  	/* Activate the new client */
  	client_activate_surface(client_surface(c), 1);
  
@@ -79,7 +79,7 @@ index 96d8a0d..7fd5a51 100644
  }
  
  void
-@@ -2321,6 +2325,7 @@ mapnotify(struct wl_listener *listener, void *data)
+@@ -2319,6 +2323,7 @@ mapnotify(struct wl_listener *listener, void *data)
  		goto unset_fullscreen;
  	}
  
@@ -87,7 +87,7 @@ index 96d8a0d..7fd5a51 100644
  	for (i = 0; i < 4; i++) {
  		c->border[i] = wlr_scene_rect_create(c->scene, 0, 0,
  			(float[])COLOR(colors[c->isurgent ? SchemeUrg : SchemeNorm][ColBorder]));
-@@ -2766,13 +2771,7 @@ resize(Client *c, struct wlr_box geo, int interact)
+@@ -2764,13 +2769,7 @@ resize(Client *c, struct wlr_box geo, int interact)
  	/* Update scene-graph, including borders */
  	wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
  	wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
@@ -102,7 +102,7 @@ index 96d8a0d..7fd5a51 100644
  
  	client_set_size(c, c->geom.width - 2 * c->bw, c->geom.height - 2 * c->bw);
  	client_get_clip(c, &clip);
-@@ -2825,6 +2824,24 @@ run(char *startup_cmd)
+@@ -2823,6 +2822,24 @@ run(char *startup_cmd)
  	wl_display_run(dpy);
  }
  
@@ -127,7 +127,7 @@ index 96d8a0d..7fd5a51 100644
  void
  setcursor(struct wl_listener *listener, void *data)
  {
-@@ -2898,7 +2915,7 @@ setfullscreen(Client *c, int fullscreen)
+@@ -2896,7 +2913,7 @@ setfullscreen(Client *c, int fullscreen)
  	c->isfullscreen = fullscreen;
  	if (!c->mon || !client_surface(c)->mapped)
  		return;
@@ -136,7 +136,7 @@ index 96d8a0d..7fd5a51 100644
  	client_set_fullscreen(c, fullscreen);
  	wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
  			? LyrFS : c->isfloating ? LyrFloat : LyrTile]);
-@@ -4127,7 +4144,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
+@@ -4105,7 +4122,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
  	c = xsurface->data = ecalloc(1, sizeof(*c));
  	c->surface.xwayland = xsurface;
  	c->type = X11;

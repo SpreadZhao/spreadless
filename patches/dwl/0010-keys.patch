@@ -1,15 +1,15 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SpreadZhao <spreadzhao@outlook.com>
 Date: Thu, 29 Oct 2026 12:18:32 +0800
-Subject: [PATCH] feat(keys): configure keyboard, mouse and scroll bindings
+Subject: [PATCH] feat(keys): configure keyboard and mouse bindings
 
 ---
- config.h | 121 ++++++++++++++++++++++++++++++----------------------
- dwl.1    | 126 ++++++++++++++++++++++++++++++++++---------------------
- 2 files changed, 151 insertions(+), 96 deletions(-)
+ config.h | 120 +++++++++++++++++++++++++++++++----------------------
+ dwl.1    | 123 ++++++++++++++++++++++++++++++++++---------------------
+ 2 files changed, 147 insertions(+), 96 deletions(-)
 
 diff --git a/config.h b/config.h
-index 63dfb5a..5bbe9e7 100644
+index 63dfb5a..40f0715 100644
 --- a/config.h
 +++ b/config.h
 @@ -182,7 +182,7 @@ static const enum libinput_config_accel_profile mouse_accel_profile = LIBINPUT_C
@@ -21,7 +21,7 @@ index 63dfb5a..5bbe9e7 100644
  
  #define TAGKEYS(KEY,TAG) \
  	{ MODKEY,                    KEY,            view,            {.ui = 1 << TAG} }, \
-@@ -194,62 +194,85 @@ static const double mouse_accel_speed = 0.0;
+@@ -194,62 +194,84 @@ static const double mouse_accel_speed = 0.0;
  #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
  
  /* commands */
@@ -152,14 +152,13 @@ index 63dfb5a..5bbe9e7 100644
  static const Axis axes[] = {
 -	{ MODKEY, AxisUp,   spawn, SHCMD("volume-up_EXAMPLE") },
 -	{ MODKEY, AxisDown, spawn, SHCMD("volume-down_EXAMPLE") },
-+	{ MODKEY, AxisUp,   shiftview, {.i = -1} },
-+	{ MODKEY, AxisDown, shiftview, {.i = +1} },
++	{0},
  };
 diff --git a/dwl.1 b/dwl.1
-index c74c05f..cda593b 100644
+index c74c05f..69edec5 100644
 --- a/dwl.1
 +++ b/dwl.1
-@@ -43,73 +43,101 @@ Users are encouraged to customize
+@@ -43,73 +43,98 @@ Users are encouraged to customize
  .Nm
  by editing the sources, in particular
  .Pa config.h .
@@ -301,13 +300,10 @@ index c74c05f..cda593b 100644
 +Assign the focused window to that tag.
 +.It Mod-Button3 on a tag
 +Toggle the focused window's membership in that tag.
-+.It Mod-scroll up , Mod-scroll down
-+View the previous or next tag on the output under the pointer.
-+Tags wrap at either end; a multi-tag view moves as a group.
  .El
  .Sh STATUS BAR
  The built-in bar on each output displays tags, the layout, the focused window
-@@ -148,6 +176,10 @@ Various variables specific to wlroots.
+@@ -148,6 +173,10 @@ Various variables specific to wlroots.
  Various variables specific to libxkbcommon.
  .It Ev XCURSOR_PATH
  List of directories to search for XCursor themes in.
@@ -318,7 +314,7 @@ index c74c05f..cda593b 100644
  .It Ev HOME
  A directory where there are always dear files there for you.
  Waiting for you to clean them up.
-@@ -178,7 +210,7 @@ Supply status text from
+@@ -178,7 +207,7 @@ Supply status text from
  .Sh SEE ALSO
  .Xr dwm 1 ,
  .Xr foot 1 ,
