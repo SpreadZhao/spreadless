@@ -7,26 +7,26 @@ description: Maintain spreadless dwl and slstatus patch queues, subsystem config
 
 ## Program references
 
-Read [dwl](references/dwl.md) for compositor changes and [slstatus](references/slstatus.md) for status components. Each reference contains its subsystem ownership map and build details.
+Read [dwl](references/dwl.md) for compositor changes and [slstatus](references/slstatus.md) for status components. Each reference contains its patch ownership map and build details.
 
 ## Source ownership
 
 - `upstream/PROGRAM/` is a read-only Git submodule. Advance its checked-out revision only for an upstream upgrade; do not edit or commit source there.
-- `patches/PROGRAM/` is an independently numbered `NNNN-module.patch` series. The selected worktree is `.worktree/PROGRAM/`; both programs may have active queues.
+- `patches/PROGRAM/` is a two-level `NN-group/NN-name.patch` series. The selected worktree is `.worktree/PROGRAM/`; both programs may have active queues.
 - `nix/packages/` owns installable packages, `nix/home-manager/` owns consumer options, and `nix/lib/` contains shared patch discovery and C settings helpers.
 - `scripts/spreadless-queue` owns Git queue operations. `scripts/build/PROGRAM` compiles the selected queue and removes build artifacts. `verify` runs it after every commit.
 - Workspace instructions belong in `flake.nix`; this skill and its references belong in `skills/spreadless/`. NAW generates workspace instructions and installed skill links.
 
-## Subsystem rules
+## Queue rules
 
-1. Each program has one patch per subsystem. Find the owner before editing. Fold fixes, extensions and changes to defaults into that patch; do not append follow-up patches for the same subsystem.
-2. Keep subsystem code, declarations, configuration and documentation together. The dwl `keys` module owns all keyboard, mouse-button and scroll bindings, modifier keys and spawn commands. Feature modules implement the functions and settings used by those bindings. Apply `keys` last. Split changes spanning several subsystems, even when they touch the same files. Cross-program changes update each program's queue separately.
-3. Add a patch only for a new subsystem. Place it after its dependencies and, for dwl, before `keys`. Update the selected reference's ownership map when boundaries change. Preserve community authorship, source links and license notices when combining patches.
-4. `0001-config.patch` only copies upstream `config.def.h` to tracked `config.h`; dwl also removes its ignore entry. Keep `config.def.h` unchanged throughout the series. Later configuration belongs to the owning subsystem.
-5. Subjects use `type(module): English summary`. Names start with a letter, use one or two lowercase words separated by a hyphen, may include digits, and contain at most 24 characters. Review boundaries rather than truncating long names.
-6. Export derives filenames from module scopes and rejects missing, invalid, overlong or duplicate scopes before replacing patches. Fold fixups before exporting. Every commit must compile.
+1. Organize each program's queue into contiguous functional groups (`NN-group/`), with low-coupling, high-cohesion patches (`NN-name.patch`) inside each group. Find the owning patch before editing; fold changes into that patch rather than appending follow-up fixups.
+2. Keep each patch's code, declarations, configuration and documentation together. The dwl `keys` group owns all keyboard, mouse-button and scroll bindings, modifier keys and spawn commands. Feature patches implement the functions and settings used by those bindings. Apply `keys` last. Split changes spanning several patches or groups, even when they touch the same files. Cross-program changes update each program's queue separately.
+3. Add a new patch within the appropriate group for a distinct mechanism, extension or bug fix, placed after its dependencies and, for dwl, before `keys`. Update the selected reference's ownership map when boundaries change. Preserve community authorship, source links and license notices.
+4. `01-config/01-init.patch` only copies upstream `config.def.h` to tracked `config.h`; dwl also removes its ignore entry. Keep `config.def.h` unchanged throughout the series. Later configuration belongs to the owning patch.
+5. Subjects use `group/name: English summary` without a commit-type prefix. Both `group` and `name` start with a letter, use one or two lowercase words separated by a hyphen, may include digits, and contain at most 24 characters. Review boundaries rather than truncating long names.
+6. Export derives `NN-group/NN-name.patch` paths from `group/name` scopes. Before replacing patches, it rejects missing, invalid, overlong or duplicate scopes and non-contiguous groups. Fold fixups before exporting. Every commit must compile.
 
-## Update an existing subsystem
+## Update an existing patch
 
 Run queue operations inside `nix develop "path:$PWD"`. Set `program` to `dwl` or `slstatus`.
 
@@ -38,17 +38,17 @@ worktree=".worktree/$program"
 git -C "$worktree" log --oneline --reverse "$upstream_rev..HEAD"
 ```
 
-Set `module_commit` to the owning commit's hash. Edit the selected worktree and run `spreadless-queue "$program" build`. Stage only the owning subsystem's changes, using `git add -p` for shared files. Amend the owner if it is `HEAD`; otherwise create a fixup:
+Set `patch_commit` to the owning commit's hash. Edit the selected worktree and run `spreadless-queue "$program" build`. Stage only the owning patch's changes, using `git add -p` for shared files. Amend the owner if it is `HEAD`; otherwise create a fixup:
 
 ```sh
-git -C "$worktree" commit --fixup "$module_commit"
+git -C "$worktree" commit --fixup "$patch_commit"
 GIT_SEQUENCE_EDITOR=true git -C "$worktree" rebase -i --autosquash "$upstream_rev"
 spreadless-queue "$program" verify
 spreadless-queue "$program" export
 spreadless-queue "$program" clean
 ```
 
-Create a new scoped commit only for a new subsystem, then use `git -C "$worktree" rebase -i "$upstream_rev"` to place it after its dependencies. After conflicts, inspect code and `config.h`, compile the paused state, and continue the Git rebase. Keep patches in the selected program's directory.
+Create a new `group/name: summary` commit only for a distinct patch, then use `git -C "$worktree" rebase -i "$upstream_rev"` to place it inside its contiguous group after its dependencies. After conflicts, inspect code and `config.h`, compile the paused state, and continue the Git rebase. Keep patches in the selected program's directory.
 
 ## Upgrade upstream
 

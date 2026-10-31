@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] input/primary-selection: allow disabling primary selection
+
+---
+ config.h | 1 +
+ dwl.c    | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/config.h b/config.h
+index 6441463..76e65f4 100644
+--- a/config.h
++++ b/config.h
+@@ -58,6 +58,7 @@ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will
+ static const unsigned int borderpx         = SDWL_BORDERPX; /* visible border width when focused */
+ static const unsigned int unfocused_borderpx = SDWL_UNFOCUSED_BORDERPX;
+ static const unsigned int snap             = 32; /* snap pixel */
++static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
+ static const int showbar                   = 1; /* 0 means no bar */
+ static const int topbar                    = 1; /* 0 means bottom bar */
+ static const char *fonts[]                 = {
+diff --git a/dwl.c b/dwl.c
+index 3ca6c9e..4d61ef4 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -2891,6 +2891,8 @@ setpsel(struct wl_listener *listener, void *data)
+ 	 * ignore such requests if they so choose, but in dwl we always honor them
+ 	 */
+ 	struct wlr_seat_request_set_primary_selection_event *event = data;
++	if (!enable_primary_selection)
++		return;
+ 	wlr_seat_set_primary_selection(seat, event->source, event->serial);
+ }
+ 

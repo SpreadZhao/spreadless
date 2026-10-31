@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SpreadZhao <spreadzhao@outlook.com>
 Date: Thu, 29 Oct 2026 12:28:49 +0800
-Subject: [PATCH] feat(output): configure status output defaults
+Subject: [PATCH] config/defaults: configure status output defaults
 
 ---
  config.h | 8 ++++----

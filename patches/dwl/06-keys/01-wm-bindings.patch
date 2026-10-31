@@ -1,15 +1,16 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SpreadZhao <spreadzhao@outlook.com>
 Date: Thu, 29 Oct 2026 12:18:32 +0800
-Subject: [PATCH] feat(keys): configure keyboard and mouse bindings
+Subject: [PATCH] keys/wm-bindings: configure Super window management and mouse
+ bindings
 
 ---
- config.h | 120 +++++++++++++++++++++++++++++++----------------------
- dwl.1    | 123 ++++++++++++++++++++++++++++++++++---------------------
- 2 files changed, 147 insertions(+), 96 deletions(-)
+ config.h | 101 ++++++++++++++++++++++++++++---------------------------
+ dwl.1    |  93 ++++++++++++++++++++++++--------------------------
+ 2 files changed, 96 insertions(+), 98 deletions(-)
 
 diff --git a/config.h b/config.h
-index 63dfb5a..40f0715 100644
+index 63dfb5a..ed26301 100644
 --- a/config.h
 +++ b/config.h
 @@ -182,7 +182,7 @@ static const enum libinput_config_accel_profile mouse_accel_profile = LIBINPUT_C
@@ -21,14 +22,16 @@ index 63dfb5a..40f0715 100644
  
  #define TAGKEYS(KEY,TAG) \
  	{ MODKEY,                    KEY,            view,            {.ui = 1 << TAG} }, \
-@@ -194,62 +194,84 @@ static const double mouse_accel_speed = 0.0;
- #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+@@ -190,66 +190,69 @@ static const double mouse_accel_speed = 0.0;
+ 	{ MODKEY|WLR_MODIFIER_SHIFT, KEY,            tag,             {.ui = 1 << TAG} }, \
+ 	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT,KEY,toggletag,  {.ui = 1 << TAG} }
+ 
+-/* helper for spawning shell commands in the pre dwm-5.0 fashion */
+-#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
  
  /* commands */
--static const char *termcmd[] = { "foot", NULL };
--static const char *menucmd[] = { "wmenu-run", NULL };
-+static const char *termcmd[] = { "footclient", NULL };
-+static const char *menucmd[] = { "fuzzel", NULL };
+ static const char *termcmd[] = { "foot", NULL };
+ static const char *menucmd[] = { "wmenu-run", NULL };
  
  static const Key keys[] = {
 -	/* modifier                  key                  function          argument */
@@ -73,26 +76,9 @@ index 63dfb5a..40f0715 100644
 -	 */
 -#define CHVT(n) { WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_F##n, chvt, {.ui = (n)} }
 +	/* modifier                                    key                            function          argument */
-+	/* --- Applications & External Scripts --- */
-+	{ MODKEY,                                      XKB_KEY_Return,                spawn,            {.v = termcmd} },
-+	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_Return,                spawn,            SHCMD("footclient -a dropdown-foot") },
-+	{ MODKEY,                                      XKB_KEY_space,                 spawn,            {.v = menucmd} },
++	{ MODKEY,                                      XKB_KEY_p,                     spawn,            {.v = menucmd} },
++	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_Return,                spawn,            {.v = termcmd} },
 +	{ MODKEY,                                      XKB_KEY_b,                     togglebar,        {0} },
-+	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_l,                     spawn,            SHCMD("swaylock") },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_l,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/dwl/dwl_lock.sh\"") },
-+	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_a,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/screenshot.sh\"") },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_a,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/screenshot.sh\" -o") },
-+	{ MODKEY|WLR_MODIFIER_SHIFT,                   XKB_KEY_v,                     spawn,            SHCMD("\"${SCRIPT_HOME:-$HOME/scripts}/util/clipboard_history.sh\"") },
-+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT, XKB_KEY_n,                     spawn,            SHCMD("notification-history browse") },
-+	{ MODKEY,                                      XKB_KEY_z,                     spawn,            SHCMD("shmooz") },
-+
-+	/* --- Media & Hardware Keys --- */
-+	{ 0,                                           XKB_KEY_XF86AudioRaiseVolume,  spawn,            SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ -l 1.0") },
-+	{ 0,                                           XKB_KEY_XF86AudioLowerVolume,  spawn,            SHCMD("wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1-") },
-+	{ 0,                                           XKB_KEY_XF86AudioMute,         spawn,            SHCMD("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") },
-+	{ 0,                                           XKB_KEY_XF86AudioMicMute,      spawn,            SHCMD("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle") },
-+	{ 0,                                           XKB_KEY_XF86MonBrightnessUp,   spawn,            SHCMD("brightnessctl --class=backlight set +10%") },
-+	{ 0,                                           XKB_KEY_XF86MonBrightnessDown, spawn,            SHCMD("brightnessctl --class=backlight set 10%-") },
 +
 +	/* --- Window Focus & Stack Management (Native dwl) --- */
 +	{ MODKEY,                                      XKB_KEY_j,                     focusstack,       {.i = +1} },
@@ -155,10 +141,10 @@ index 63dfb5a..40f0715 100644
 +	{0},
  };
 diff --git a/dwl.1 b/dwl.1
-index c74c05f..69edec5 100644
+index c74c05f..193c1bd 100644
 --- a/dwl.1
 +++ b/dwl.1
-@@ -43,73 +43,98 @@ Users are encouraged to customize
+@@ -43,73 +43,69 @@ Users are encouraged to customize
  .Nm
  by editing the sources, in particular
  .Pa config.h .
@@ -180,19 +166,10 @@ index c74c05f..69edec5 100644
 -.It Mod-p
 -Spawn
 -.Xr wmenu-run 1 .
-+Toggle the focused window's membership in a tag.
-+.It Mod-Return
-+Open a terminal with
-+.Xr footclient 1 .
- .It Mod-Shift-Return
+-.It Mod-Shift-Return
 -Spawn
 -.Xr foot 1 .
-+Open a Foot client with the app ID
-+.Li dropdown-foot .
-+.It Mod-Space
-+Open the
-+.Xr fuzzel 1
-+application launcher.
++Toggle the focused window's membership in a tag.
  .It Mod-[jk]
 -Move focus down/up the stack.
 +Focus the next or previous window.
@@ -227,6 +204,8 @@ index c74c05f..69edec5 100644
 -Toggle floating state of window.
 -.It Mod-e
 -Toggle fullscreen state of window.
+-.It Mod-0
+-Show all windows.
 +Cycle through Tile, Monocle and Deck layouts.
 +.It Mod-f
 +Toggle fullscreen for the focused window.
@@ -234,24 +213,6 @@ index c74c05f..69edec5 100644
 +Toggle floating for the focused window.
 +.It Mod-b
 +Show or hide the status bar on the selected output.
-+.It Mod-Shift-l
-+Lock the session with
-+.Xr swaylock 1 .
-+.It Mod-Ctrl-Shift-l
-+Run the dwl lock script to lock the session and turn off displays.
-+.It Mod-Shift-a
-+Run the screenshot script.
-+.It Mod-Ctrl-Shift-a
-+Run the screenshot script with
-+.Fl o .
-+.It Mod-Shift-v
-+Open clipboard history.
-+.It Mod-Ctrl-Shift-n
-+Open notification history.
-+.It Mod-z
-+Launch shmooz.
- .It Mod-0
--Show all windows.
 +View all tags.
  .It Mod-Shift-0
 -Set all tags for window.
@@ -276,8 +237,6 @@ index c74c05f..69edec5 100644
  .El
 -These might differ depending on your keyboard layout.
 +.Pp
-+Dedicated audio keys adjust volume and toggle speaker or microphone mute.
-+Dedicated backlight keys adjust display brightness.
 +Key names may differ depending on the keyboard layout.
  .Ss Mouse commands
 -.Bl -tag -width 20n -offset indent -compact
@@ -303,23 +262,11 @@ index c74c05f..69edec5 100644
  .El
  .Sh STATUS BAR
  The built-in bar on each output displays tags, the layout, the focused window
-@@ -148,6 +173,10 @@ Various variables specific to wlroots.
+@@ -148,7 +144,6 @@ Various variables specific to wlroots.
  Various variables specific to libxkbcommon.
  .It Ev XCURSOR_PATH
  List of directories to search for XCursor themes in.
-+.It Ev SCRIPT_HOME
-+Directory containing the screenshot, clipboard-history and dwl lock scripts.
-+Defaults to
-+.Pa $HOME/scripts .
- .It Ev HOME
+-.It Ev HOME
  A directory where there are always dear files there for you.
  Waiting for you to clean them up.
-@@ -178,7 +207,7 @@ Supply status text from
- .Sh SEE ALSO
- .Xr dwm 1 ,
- .Xr foot 1 ,
--.Xr wmenu 1 ,
-+.Xr fuzzel 1 ,
- .Xr xkeyboard-config 7
- .Sh BUGS
- All of them.
+ .El

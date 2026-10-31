@@ -1,0 +1,169 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] bar/barcolors: support status text color markup
+
+Support ^fg(RRGGBB), ^bg(RRGGBB), ^fg() and ^bg() markers in status text
+without counting markup toward text width or click areas.
+
+Color syntax follows barcolors by Kerberoge:
+https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/barcolors
+---
+ README.md |  4 +++
+ dwl.1     | 12 +++++++++
+ dwl.c     | 79 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 93 insertions(+), 2 deletions(-)
+
+diff --git a/README.md b/README.md
+index 000a4f6..a82d676 100644
+--- a/README.md
++++ b/README.md
+@@ -113,6 +113,10 @@ Every output shows the latest complete line. Lines may contain up to 1023 bytes,
+ excluding the newline. Overlong lines are discarded and the previous status is
+ preserved. The startup command does not receive status information.
+ 
++Status text supports `^fg(RRGGBB)` and `^bg(RRGGBB)` to change foreground and
++background colors. `^fg()` and `^bg()` restore the normal colors. Invalid markers
++are displayed as text.
++
+ ### (Known) Java nonreparenting WM issue
+ Certain IDEs don't display correctly unless an environmental variable for Java AWT
+ indicates that the WM is nonreparenting.
+diff --git a/dwl.1 b/dwl.1
+index e6a7ee5..c74c05f 100644
+--- a/dwl.1
++++ b/dwl.1
+@@ -119,6 +119,18 @@ Every output shows the latest complete line.
+ Lines longer than 1023 bytes, excluding the newline, are discarded and the
+ previous status is preserved.
+ The startup command does not receive status information.
++.Pp
++The markers
++.Li ^fg(RRGGBB)
++and
++.Li ^bg(RRGGBB)
++set foreground and background colors using six hexadecimal digits.
++.Li ^fg()
++and
++.Li ^bg()
++restore the normal colors.
++Invalid markers are displayed as text.
++.Sh ENVIRONMENT
+ These environment variables are used by
+ .Nm :
+ .Bl -tag -width XDG_RUNTIME_DIR
+diff --git a/dwl.c b/dwl.c
+index 33f47df..bdc8adf 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -340,7 +340,9 @@ static void destroykeyboardgroup(struct wl_listener *listener, void *data);
+ static Monitor *dirtomon(enum wlr_direction dir);
+ static void drawbar(Monitor *m);
+ static void drawbars(void);
++static size_t statuscolor(const char *text, uint32_t *scheme);
+ static int statusfeed(const char *text, size_t length);
++static int statuslayout(Monitor *m, int x, int render);
+ static int statuswidth(Monitor *m);
+ static void focusclient(Client *c, int lift);
+ static void focusmon(const Arg *arg);
+@@ -1695,7 +1697,8 @@ drawbar(Monitor *m)
+ 	/* draw status first so it can be overdrawn by tags later */
+ 	drwl_setscheme(m->drw, colors[SchemeNorm]);
+ 	tw = statuswidth(m);
+-	drwl_text(m->drw, m->b.width - tw, 0, tw, m->b.height, 0, stext, 0);
++	drwl_rect(m->drw, m->b.width - tw, 0, tw, m->b.height, 1, 1);
++	statuslayout(m, m->b.width - tw, 1);
+ 
+ 	wl_list_for_each(c, &clients, link) {
+ 		if (c->mon != m)
+@@ -3061,6 +3064,45 @@ startdrag(struct wl_listener *listener, void *data)
+ 	LISTEN_STATIC(&drag->icon->events.destroy, destroydragicon);
+ }
+ 
++/* Color syntax follows the community barcolors patch by Kerberoge. */
++size_t
++statuscolor(const char *text, uint32_t *scheme)
++{
++	unsigned int i, digit, column;
++	uint32_t color = 0;
++	const char *value;
++
++	if (!strncmp(text, "^fg(", 4))
++		column = ColFg;
++	else if (!strncmp(text, "^bg(", 4))
++		column = ColBg;
++	else
++		return 0;
++
++	value = text + 4;
++	if (*value == ')') {
++		if (scheme)
++			scheme[column] = colors[SchemeNorm][column];
++		return 5;
++	}
++	for (i = 0; i < 6; i++) {
++		if (value[i] >= '0' && value[i] <= '9')
++			digit = (unsigned int)(value[i] - '0');
++		else if (value[i] >= 'a' && value[i] <= 'f')
++			digit = (unsigned int)(value[i] - 'a' + 10);
++		else if (value[i] >= 'A' && value[i] <= 'F')
++			digit = (unsigned int)(value[i] - 'A' + 10);
++		else
++			return 0;
++		color = (color << 4) | digit;
++	}
++	if (value[6] != ')')
++		return 0;
++	if (scheme)
++		scheme[column] = (color << 8) | 0xff;
++	return 11;
++}
++
+ int
+ statusfeed(const char *text, size_t length)
+ {
+@@ -3091,10 +3133,43 @@ statusfeed(const char *text, size_t length)
+ 	return changed;
+ }
+ 
++int
++statuslayout(Monitor *m, int x, int render)
++{
++	char run[sizeof(stext)];
++	const char *p = stext;
++	uint32_t scheme[3];
++	size_t length, command;
++	int width, total = 0;
++
++	memcpy(scheme, colors[SchemeNorm], sizeof(scheme));
++	while (*p) {
++		if ((command = statuscolor(p, scheme))) {
++			p += command;
++			continue;
++		}
++		for (length = 0; p[length] && !statuscolor(p + length, NULL); length++)
++			;
++		memcpy(run, p, length);
++		run[length] = '\0';
++		width = (int)drwl_font_getwidth(m->drw, run);
++		if (render && width) {
++			drwl_setscheme(m->drw, scheme);
++			drwl_text(m->drw, x + total, 0, (unsigned int)width,
++				m->b.height, 0, run, 0);
++		}
++		total += width;
++		p += length;
++	}
++	if (render)
++		drwl_setscheme(m->drw, colors[SchemeNorm]);
++	return total;
++}
++
+ int
+ statuswidth(Monitor *m)
+ {
+-	return (int)drwl_font_getwidth(m->drw, stext) + m->statuspad;
++	return statuslayout(m, 0, 0) + m->statuspad;
+ }
+ 
+ int

@@ -1,23 +1,20 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SpreadZhao <spreadzhao@outlook.com>
 Date: Thu, 29 Oct 2026 12:28:49 +0800
-Subject: [PATCH] feat(battery): show charge and state icons
+Subject: [PATCH] battery/battery-icon: add battery percentage and state icon
+ component
 
-Adapt battery icons by sewn while keeping percentage-first output and distinct full, not charging and unknown states:
+Adapt battery icons by sewn while keeping percentage-first output and
+distinct full, not charging and unknown states:
 https://tools.suckless.org/slstatus/patches/icons/slstatus-icons-1.0.patch
-
-Include drkhsh's upstream battery state buffer fix. A 12-character state needs 13 bytes with its NUL terminator:
-https://git.suckless.org/slstatus/commit/98769dfed7266b5a9959162e03bee1ddfaf5ecb4.html
-
-Co-authored-by: drkhsh <me@drkhsh.at>
 ---
- components/battery.c | 46 ++++++++++++++++++++++++++++++++++++++++++--
+ components/battery.c | 42 ++++++++++++++++++++++++++++++++++++++++++
  config.h             |  1 +
  slstatus.h           |  1 +
- 3 files changed, 46 insertions(+), 2 deletions(-)
+ 3 files changed, 44 insertions(+)
 
 diff --git a/components/battery.c b/components/battery.c
-index 1c753f9..ec298b1 100644
+index f2dc393..ec298b1 100644
 --- a/components/battery.c
 +++ b/components/battery.c
 @@ -1,4 +1,5 @@
@@ -74,24 +71,6 @@ index 1c753f9..ec298b1 100644
  	const char *
  	battery_state(const char *bat)
  	{
-@@ -62,7 +104,7 @@
- 			{ "Not charging", "o" },
- 		};
- 		size_t i;
--		char path[PATH_MAX], state[12];
-+		char path[PATH_MAX], state[13];
- 
- 		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0)
- 			return NULL;
-@@ -81,7 +123,7 @@
- 	{
- 		uintmax_t charge_now, current_now, m, h;
- 		double timeleft;
--		char path[PATH_MAX], state[12];
-+		char path[PATH_MAX], state[13];
- 
- 		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0)
- 			return NULL;
 diff --git a/config.h b/config.h
 index 11ed15d..2cfd84c 100644
 --- a/config.h

@@ -1,9 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SpreadZhao <spreadzhao@outlook.com>
 Date: Thu, 29 Oct 2026 12:18:32 +0800
-Subject: [PATCH] feat(tablet): support pen input
+Subject: [PATCH] input/tablet: support tablet-v2 pen input and output mapping
 
-Adapt tablet-input for dwl 0.9 and wlroots 0.20. Forward pressure and tilt, emulate pointer input for clients without tablet-v2 support, and map devices to optional outputs.
+Adapt tablet-input for dwl 0.9 and wlroots 0.20. Forward pressure and tilt,
+emulate pointer input for clients without tablet-v2 support, and map devices
+to optional outputs.
 
 Based on tablet-input by pi66:
 https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/tablet-input
@@ -13,10 +15,10 @@ https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/tablet-input
  2 files changed, 299 insertions(+), 1 deletion(-)
 
 diff --git a/config.h b/config.h
-index 630a66e..c1ab1ff 100644
+index c1085da..63dfb5a 100644
 --- a/config.h
 +++ b/config.h
-@@ -46,6 +46,11 @@
+@@ -52,6 +52,11 @@
                          ((hex >> 16) & 0xFF) / 255.0f, \
                          ((hex >> 8) & 0xFF) / 255.0f, \
                          (hex & 0xFF) / 255.0f }
@@ -26,10 +28,10 @@ index 630a66e..c1ab1ff 100644
 +static const TabletRule tabletrules[] = { SDWL_TABLET_RULES };
 +
  /* appearance */
- static const int sloppyfocus               = 1;  /* focus follows mouse */
+ static const int sloppyfocus               = 0;  /* focus follows mouse */
  static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 diff --git a/dwl.c b/dwl.c
-index b6855a5..01581be 100644
+index f6c9679..153aed4 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -60,6 +60,8 @@
@@ -73,7 +75,7 @@ index b6855a5..01581be 100644
  /* function declarations */
  static void applybounds(Client *c, struct wlr_box *bbox);
  static void applyrules(Client *c);
-@@ -401,6 +428,17 @@ static void startdrag(struct wl_listener *listener, void *data);
+@@ -402,6 +429,17 @@ static void startdrag(struct wl_listener *listener, void *data);
  static int statusin(int fd, unsigned int mask, void *data);
  static void tag(const Arg *arg);
  static void tagmon(const Arg *arg);
@@ -91,7 +93,7 @@ index b6855a5..01581be 100644
  static void tile(Monitor *m);
  static void togglebar(const Arg *arg);
  static void togglefloating(const Arg *arg);
-@@ -460,6 +498,7 @@ static struct wlr_pointer_constraints_v1 *pointer_constraints;
+@@ -461,6 +499,7 @@ static struct wlr_pointer_constraints_v1 *pointer_constraints;
  static struct wlr_relative_pointer_manager_v1 *relative_pointer_mgr;
  static struct wlr_pointer_constraint_v1 *active_constraint;
  
@@ -99,7 +101,7 @@ index b6855a5..01581be 100644
  static struct wlr_cursor *cursor;
  static struct wlr_xcursor_manager *cursor_mgr;
  
-@@ -492,6 +531,10 @@ static const struct wlr_buffer_impl buffer_impl = {
+@@ -493,6 +532,10 @@ static const struct wlr_buffer_impl buffer_impl = {
  /* global event handlers */
  static struct wl_listener cursor_axis = {.notify = axisnotify};
  static struct wl_listener cursor_button = {.notify = buttonpress};
@@ -110,7 +112,7 @@ index b6855a5..01581be 100644
  static struct wl_listener cursor_frame = {.notify = cursorframe};
  static struct wl_listener cursor_motion = {.notify = motionrelative};
  static struct wl_listener cursor_motion_absolute = {.notify = motionabsolute};
-@@ -1045,6 +1088,10 @@ cleanuplisteners(void)
+@@ -1046,6 +1089,10 @@ cleanuplisteners(void)
  	wl_list_remove(&cursor_axis.link);
  	wl_list_remove(&cursor_button.link);
  	wl_list_remove(&cursor_frame.link);
@@ -121,7 +123,7 @@ index b6855a5..01581be 100644
  	wl_list_remove(&cursor_motion.link);
  	wl_list_remove(&cursor_motion_absolute.link);
  	wl_list_remove(&gpu_reset.link);
-@@ -1492,6 +1539,20 @@ createpointer(struct wlr_pointer *pointer)
+@@ -1493,6 +1540,20 @@ createpointer(struct wlr_pointer *pointer)
  	wlr_cursor_attach_input_device(cursor, &pointer->base);
  }
  
@@ -142,7 +144,7 @@ index b6855a5..01581be 100644
  void
  createpointerconstraint(struct wl_listener *listener, void *data)
  {
-@@ -1753,6 +1814,23 @@ destroykeyboardgroup(struct wl_listener *listener, void *data)
+@@ -1754,6 +1815,23 @@ destroykeyboardgroup(struct wl_listener *listener, void *data)
  	free(group);
  }
  
@@ -166,7 +168,7 @@ index b6855a5..01581be 100644
  Monitor *
  dirtomon(enum wlr_direction dir)
  {
-@@ -2045,6 +2123,9 @@ inputdevice(struct wl_listener *listener, void *data)
+@@ -2049,6 +2127,9 @@ inputdevice(struct wl_listener *listener, void *data)
  	case WLR_INPUT_DEVICE_POINTER:
  		createpointer(wlr_pointer_from_input_device(device));
  		break;
@@ -176,7 +178,7 @@ index b6855a5..01581be 100644
  	default:
  		/* TODO handle other input device types */
  		break;
-@@ -2762,6 +2843,19 @@ setcursor(struct wl_listener *listener, void *data)
+@@ -2779,6 +2860,19 @@ setcursor(struct wl_listener *listener, void *data)
  				event->hotspot_x, event->hotspot_y);
  }
  
@@ -196,7 +198,7 @@ index b6855a5..01581be 100644
  void
  setcursorshape(struct wl_listener *listener, void *data)
  {
-@@ -2771,7 +2865,12 @@ setcursorshape(struct wl_listener *listener, void *data)
+@@ -2788,7 +2882,12 @@ setcursorshape(struct wl_listener *listener, void *data)
  	/* This can be sent by any client, so we check to make sure this one
  	 * actually has pointer focus first. If so, we can tell the cursor to
  	 * use the provided cursor shape. */
@@ -210,7 +212,7 @@ index b6855a5..01581be 100644
  		wlr_cursor_set_xcursor(cursor, cursor_mgr,
  				wlr_cursor_shape_v1_name(event->shape));
  }
-@@ -3042,6 +3141,7 @@ setup(void)
+@@ -3059,6 +3158,7 @@ setup(void)
  	wl_signal_add(&pointer_constraints->events.new_constraint, &new_pointer_constraint);
  
  	relative_pointer_mgr = wlr_relative_pointer_manager_v1_create(dpy);
@@ -218,7 +220,7 @@ index b6855a5..01581be 100644
  
  	/*
  	 * Creates a cursor, which is a wlroots utility for tracking the cursor
-@@ -3076,6 +3176,10 @@ setup(void)
+@@ -3093,6 +3193,10 @@ setup(void)
  	wl_signal_add(&cursor->events.button, &cursor_button);
  	wl_signal_add(&cursor->events.axis, &cursor_axis);
  	wl_signal_add(&cursor->events.frame, &cursor_frame);
@@ -229,8 +231,8 @@ index b6855a5..01581be 100644
  
  	cursor_shape_mgr = wlr_cursor_shape_manager_v1_create(dpy, 1);
  	wl_signal_add(&cursor_shape_mgr->events.request_set_shape, &request_set_cursor_shape);
-@@ -3317,6 +3421,195 @@ tagmon(const Arg *arg)
- 		setmon(sel, dirtomon(arg->i), 0);
+@@ -3336,6 +3440,195 @@ tagmon(const Arg *arg)
+ 	}
  }
  
 +/* Adapted from the dwl tablet-input patch by pi66:

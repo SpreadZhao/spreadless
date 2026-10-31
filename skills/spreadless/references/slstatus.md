@@ -1,13 +1,14 @@
 # slstatus
 
-## Subsystem ownership
+## Patch ownership
 
-| Module | Responsibility |
-| --- | --- |
-| `config` | Initial tracked copy of the upstream configuration |
-| `output` | Refresh interval, unknown-value text and output length |
-| `battery` | Battery state parsing, percentage and state icons |
-| `temperature` | CPU sensor discovery, temperature icons and colors |
+| Group | Patch | Responsibility |
+| --- | --- | --- |
+| `01-config` | `config/init` | Initial tracked copy of the upstream configuration |
+| `01-config` | `config/defaults` | Refresh interval, unknown-value text and output length defaults |
+| `02-battery` | `battery/state-buffer` | Power supply status buffer size fix for 12-character state strings |
+| `02-battery` | `battery/battery-icon` | Battery percentage and state icon component (`battery_icon`) |
+| `03-temperature` | `temperature/cpu-temp` | CPU sensor discovery, caching, temperature icons and threshold colors (`cpu_temp`) |
 
 ## Packaging
 

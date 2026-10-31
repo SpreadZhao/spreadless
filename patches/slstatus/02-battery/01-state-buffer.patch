@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: drkhsh <me@drkhsh.at>
+Date: Thu, 29 Oct 2026 12:28:49 +0800
+Subject: [PATCH] battery/state-buffer: fix power supply status buffer size
+
+A 12-character state such as "Not charging" needs 13 bytes with its NUL
+terminator.
+
+Upstream commit:
+https://git.suckless.org/slstatus/commit/98769dfed7266b5a9959162e03bee1ddfaf5ecb4.html
+---
+ components/battery.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/components/battery.c b/components/battery.c
+index 1c753f9..f2dc393 100644
+--- a/components/battery.c
++++ b/components/battery.c
+@@ -62,7 +62,7 @@
+ 			{ "Not charging", "o" },
+ 		};
+ 		size_t i;
+-		char path[PATH_MAX], state[12];
++		char path[PATH_MAX], state[13];
+ 
+ 		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0)
+ 			return NULL;
+@@ -81,7 +81,7 @@
+ 	{
+ 		uintmax_t charge_now, current_now, m, h;
+ 		double timeleft;
+-		char path[PATH_MAX], state[12];
++		char path[PATH_MAX], state[13];
+ 
+ 		if (esnprintf(path, sizeof(path), POWER_SUPPLY_STATUS, bat) < 0)
+ 			return NULL;

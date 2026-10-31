@@ -98,7 +98,7 @@ battery and temperature components. slstatus writes newline-delimited text with
 | Path | Responsibility |
 | --- | --- |
 | `upstream/dwl/`, `upstream/slstatus/` | Read-only upstream submodules pinned to dwl 0.9 and slstatus 1.1 |
-| `patches/dwl/`, `patches/slstatus/` | Independently numbered subsystem patch queues |
+| `patches/dwl/`, `patches/slstatus/` | Grouped `NN-group/NN-name.patch` queues |
 | `nix/packages/` | Package builds and program-specific dependencies |
 | `nix/home-manager/` | Independent configuration modules and their combined import |
 | `nix/lib/` | Ordered patch discovery and C settings serialization |
@@ -116,7 +116,7 @@ nix develop "path:$PWD"
 spreadless-queue dwl checkout
 spreadless-queue dwl status
 spreadless-queue dwl build
-# Update the owning subsystem commit and fold fixups.
+# Update the owning patch commit and fold fixups.
 spreadless-queue dwl verify
 spreadless-queue dwl export
 spreadless-queue dwl clean
@@ -126,21 +126,23 @@ Use `slstatus` in place of `dwl` for the other queue. Each command acts on the
 selected program; both worktrees may be open at once. `--repo PATH` selects a
 repository when running from elsewhere.
 
-Each subsystem has one patch. Fold fixes, extensions and configuration changes
-into its existing commit. Keep related code, declarations and configuration
-together. The dwl `keys` patch owns all keyboard, mouse-button and scroll
-bindings, modifier keys and spawn commands. Apply it last, after the patches
-that define the functions used by its bindings. Feature patches own those
-functions and their settings. Add a patch only for a new subsystem. Place it
-after its dependencies and, for dwl, before `keys`. Each queue starts with
-`0001-config.patch`, which initializes tracked `config.h`; `config.def.h`
-remains unchanged.
+Each program's queue is organized into contiguous functional groups
+(`NN-group/`), with cohesive patches (`NN-name.patch`) inside each group. Fold
+changes into the owning patch commit; add a new patch within the appropriate
+group for a distinct mechanism, extension or bug fix after its dependencies.
+Keep related code, declarations and configuration together. The dwl `06-keys`
+group owns all keyboard, mouse-button and scroll bindings, modifier keys and
+spawn commands. Apply it last, after the patches that define the functions used
+by its bindings. Feature patches own those functions and their settings. Each
+queue starts with `01-config/01-init.patch`, which initializes tracked
+`config.h`; `config.def.h` remains unchanged.
 
-Commit subjects use `type(module): English summary`. Export derives short names
-such as `0002-bar.patch` from the module scope. Names start with a letter, use
-one or two lowercase words separated by a hyphen, may include digits and contain
-at most 24 characters. Export rejects invalid or duplicate scopes before
-replacing patches.
+Commit subjects use `group/name: English summary` without a commit-type prefix.
+Export derives paths such as `02-bar/01-status-bar.patch` from the `group/name`
+scope. Both `group` and `name` start with a letter, use one or two lowercase
+words separated by a hyphen, may include digits and contain at most 24
+characters. Export rejects invalid or duplicate scopes and non-contiguous groups
+before replacing patches.
 
 The [spreadless skill](skills/spreadless/SKILL.md) documents fixup, autosquash,
 upstream upgrades and cleanup. Edit workspace instructions in `flake.nix` and

@@ -1,25 +1,36 @@
 # dwl
 
-## Subsystem ownership
+## Patch ownership
 
-| Module | Responsibility |
-| --- | --- |
-| `config` | Initial tracked copy of the upstream configuration |
-| `bar` | Rendering on all outputs, scene output teardown, fonts, padding, status input and markup, click contexts |
-| `theme` | Root, bar and border color defaults and macros |
-| `layout` | Layout algorithms, cycling and default master ratio |
-| `rules` | Application matching and floating window geometry |
-| `input` | Keyboard, mouse, touchpad, cursor size and primary-selection input policy |
-| `tablet` | Tablet protocol, output mapping and pointer emulation |
-| `focus` | Focus policy and focus after moving clients between outputs |
-| `border` | Focused, unfocused and fullscreen border widths |
-| `monitor` | Window output ownership and restoration after output reconnection |
-| `keys` | All keyboard, mouse-button and scroll bindings, modifier keys, application and script commands |
+| Group | Patch | Responsibility |
+| --- | --- | --- |
+| `01-config` | `config/init` | Initial tracked copy of the upstream configuration |
+| `02-bar` | `bar/status-bar` | Per-output bar rendering (`drwl.h`), fonts, padding, click targets and bounded newline status reader |
+| `02-bar` | `bar/barcolors` | Status text `^fg(RRGGBB)` and `^bg(RRGGBB)` color markup |
+| `02-bar` | `bar/usable-area` | Bar geometry refresh before arranging layers and client usable areas |
+| `02-bar` | `bar/scene-cleanup` | Scene output teardown before destroying monitor layers and bar buffers |
+| `03-window` | `window/theme` | Root, bar and border color defaults and `SDWL_*` color macros |
+| `03-window` | `window/deck-layout` | Deck (`[D]`) layout and 50% default master ratio |
+| `03-window` | `window/cycle-layout` | Layout cycling across non-null layouts |
+| `03-window` | `window/float-rules` | Application matching and monitor-relative floating window geometry |
+| `03-window` | `window/focus` | Focus policy (`sloppyfocus = 0`) and focus retention when moving clients across outputs |
+| `03-window` | `window/border` | Focused, unfocused and fullscreen border widths with fixed client content size |
+| `04-input` | `input/numlock` | NumLock activation on keyboard initialization |
+| `04-input` | `input/pointer-config` | Separate touchpad and mouse libinput natural-scrolling and acceleration settings |
+| `04-input` | `input/scroll-factor` | Touchpad finger scroll delta scaling (`SDWL_TOUCHPAD_SCROLL_FACTOR`) |
+| `04-input` | `input/primary-selection` | Primary-selection toggle (`enable_primary_selection`) |
+| `04-input` | `input/cursor-size` | Configurable XCursor size (`cursor_size`) |
+| `04-input` | `input/tablet` | Tablet-v2 pen input, pointer emulation, cursor shapes and `SDWL_TABLET_RULES` output mapping |
+| `05-monitor` | `monitor/restore-monitor` | Window output ownership and restoration of tags and floating geometry after output reconnection |
+| `05-monitor` | `monitor/cascade-restore` | Preservation of original output ownership and saved geometry across cascading disconnections |
+| `05-monitor` | `monitor/output-move` | Floating and saved window geometry offset updates when an active output moves in the layout |
+| `06-keys` | `keys/wm-bindings` | `Super` modifier, window-management, tag, layout, bar, monitor, VT and mouse bindings |
+| `06-keys` | `keys/spawn-bindings` | Terminal, launcher, lock, screenshot, clipboard, notification and media/backlight command bindings |
 
-The `keys` patch is last in the dwl queue. It owns the final `keys[]`, `buttons[]`
-and `axes[]` tables in `config.h`. Define feature callbacks in their owning
-patches before binding them in `keys`. Change shortcut assignments only in
-`keys`; feature patches must leave the binding tables unchanged.
+The `06-keys` group is last in the dwl queue. It owns the final `keys[]`,
+`buttons[]` and `axes[]` tables in `config.h`. Define feature callbacks in their
+owning patches before binding them in `keys/*`. Change shortcut assignments only
+in `06-keys`; feature patches must leave the binding tables unchanged.
 
 ## Packaging
 

@@ -6,12 +6,12 @@ usage() {
 Usage: spreadless-queue [--repo PATH] <dwl|slstatus> <command> [options]
 
 Commands:
-  checkout [-f|--force]  Create .worktree/PROGRAM and apply patches/PROGRAM/*.patch
+  checkout [-f|--force]  Create .worktree/PROGRAM and apply patches/PROGRAM
   status                 Show the selected upstream, patches, and worktree commits
   build                  Compile the selected worktree and remove build artifacts
   rebase                 Rebase the selected queue onto its current upstream HEAD
   verify                 Rebase and compile every commit in the selected queue
-  export                 Export one commit per module as NNNN-module.patch
+  export                 Export commits as patches/PROGRAM/NN-group/NN-name.patch
   clean                  Remove the selected worktree, including uncommitted changes
 
 checkout --force removes the selected worktree before recreating it.
@@ -77,6 +77,12 @@ ensure_worktree_ready() {
 	fi
 }
 
+collect_patches() {
+	shopt -s nullglob
+	patches=("$patch_dir"/*/*.patch "$patch_dir"/*.patch)
+	shopt -u nullglob
+}
+
 cmd_clean() {
 	if [[ -e "$worktree" ]]; then
 		git -C "$upstream" worktree remove --force "$worktree"
@@ -107,9 +113,8 @@ cmd_checkout() {
 	local git_dir
 	git_dir="$(git -C "$worktree" rev-parse --absolute-git-dir)"
 	git -C "$upstream" rev-parse HEAD >"$git_dir/spreadless-base"
-	shopt -s nullglob
-	local patches=("$patch_dir"/*.patch)
-	shopt -u nullglob
+	local -a patches=()
+	collect_patches
 	if [[ ${#patches[@]} -gt 0 ]]; then
 		git -C "$worktree" am --3way --keep-non-patch "${patches[@]}"
 	fi
@@ -120,12 +125,11 @@ cmd_status() {
 	local upstream_head
 	upstream_head="$(git -C "$upstream" rev-parse HEAD)"
 	printf 'Upstream (%s): %s\n' "$program" "$(git -C "$upstream" log -1 --oneline)"
-	shopt -s nullglob
-	local patches=("$patch_dir"/*.patch)
-	shopt -u nullglob
+	local -a patches=()
+	collect_patches
 	printf 'Exported patches (%d):\n' "${#patches[@]}"
 	for patch in "${patches[@]}"; do
-		printf '  %s\n' "$(basename "$patch")"
+		printf '  %s\n' "${patch#"$patch_dir"/}"
 	done
 	if [[ -d "$worktree" ]]; then
 		printf '\nWorktree (.worktree/%s):\n' "$program"
@@ -175,11 +179,12 @@ cmd_export() (
 		die "rebase .worktree/$program onto its current upstream HEAD before export"
 	fi
 	git -C "$worktree" diff --check "${upstream_head}..HEAD"
-	local -a commits=() modules=()
-	local commit subject module existing merge_commits commit_list
-	local subject_pattern='^[a-z]+\(([a-z][a-z0-9]*(-[a-z0-9]+)?)\): .+$'
+	local -a commits=() seen_groups=() seen_pairs=() target_relpaths=()
+	local commit subject group name pair existing merge_commits commit_list relpath
+	local current_group="" group_index=0 patch_index=0
+	local subject_pattern='^([a-z][a-z0-9]*(-[a-z0-9]+)?)/([a-z][a-z0-9]*(-[a-z0-9]+)?): .+$'
 	merge_commits="$(git -C "$worktree" rev-list --min-parents=2 "${upstream_head}..HEAD")"
-	[[ -z "$merge_commits" ]] || die "merge commits are not supported; keep one linear commit per module"
+	[[ -z "$merge_commits" ]] || die "merge commits are not supported; keep one linear commit per patch"
 	commit_list="$(git -C "$worktree" rev-list --reverse "${upstream_head}..HEAD")"
 	if [[ -n "$commit_list" ]]; then
 		mapfile -t commits <<<"$commit_list"
@@ -187,40 +192,57 @@ cmd_export() (
 	for commit in "${commits[@]}"; do
 		subject="$(git -C "$worktree" show -s --format=%s "$commit")"
 		[[ "$subject" =~ $subject_pattern ]] ||
-			die "invalid module scope in '$subject'; use type(module): summary with one or two lowercase words"
-		module="${BASH_REMATCH[1]}"
-		[[ ${#module} -le 24 ]] || die "module name '$module' exceeds 24 characters; review its responsibilities"
-		for existing in "${modules[@]}"; do
-			[[ "$module" != "$existing" ]] || die "duplicate module '$module'; fold changes into its existing commit"
+			die "invalid patch scope in '$subject'; use group/name: summary with one or two lowercase words per part"
+		group="${BASH_REMATCH[1]}"
+		name="${BASH_REMATCH[3]}"
+		[[ ${#group} -le 24 ]] || die "group name '$group' exceeds 24 characters; review its responsibilities"
+		[[ ${#name} -le 24 ]] || die "patch name '$name' exceeds 24 characters; review its responsibilities"
+		if [[ "$group" != "$current_group" ]]; then
+			for existing in "${seen_groups[@]}"; do
+				[[ "$group" != "$existing" ]] ||
+					die "group '$group' is not contiguous; keep all '$group/*' commits together"
+			done
+			seen_groups+=("$group")
+			current_group="$group"
+			group_index=$((group_index + 1))
+			patch_index=1
+		else
+			patch_index=$((patch_index + 1))
+		fi
+		pair="$group/$name"
+		for existing in "${seen_pairs[@]}"; do
+			[[ "$pair" != "$existing" ]] || die "duplicate patch '$pair'; fold changes into its existing commit"
 		done
-		modules+=("$module")
+		seen_pairs+=("$pair")
+		printf -v relpath '%02d-%s/%02d-%s.patch' "$group_index" "$group" "$patch_index" "$name"
+		target_relpaths+=("$relpath")
 	done
-	local tmp_dir
+	local tmp_dir out_dir
 	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/spreadless-queue-export.XXXXXX")"
 	trap 'rm -rf -- "$tmp_dir"' EXIT
+	out_dir="$tmp_dir/out"
+	mkdir -p "$out_dir"
 	git -C "$worktree" format-patch --zero-commit --no-signature --no-cover-letter -N \
 		--numbered-files --start-number 1 -o "$tmp_dir" "${upstream_head}..HEAD" >/dev/null
 	shopt -s nullglob
-	local numbered=("$tmp_dir"/*)
+	local numbered=("$tmp_dir"/[0-9]*)
 	shopt -u nullglob
-	[[ ${#numbered[@]} -eq ${#commits[@]} ]] || die "generated patch count does not match the module count"
-	local index filename
-	for index in "${!modules[@]}"; do
-		printf -v filename '%04d-%s.patch' "$((index + 1))" "${modules[$index]}"
-		[[ -s "$tmp_dir/$((index + 1))" ]] || die "missing generated patch for module '${modules[$index]}'"
-		mv -- "$tmp_dir/$((index + 1))" "$tmp_dir/$filename"
+	[[ ${#numbered[@]} -eq ${#commits[@]} ]] || die "generated patch count does not match the commit count"
+	local index
+	for index in "${!target_relpaths[@]}"; do
+		relpath="${target_relpaths[$index]}"
+		[[ -s "$tmp_dir/$((index + 1))" ]] || die "missing generated patch for '$relpath'"
+		mkdir -p "$out_dir/$(dirname "$relpath")"
+		mv -- "$tmp_dir/$((index + 1))" "$out_dir/$relpath"
 	done
-	shopt -s nullglob
-	local generated=("$tmp_dir"/*.patch)
-	shopt -u nullglob
+	rm -rf "$patch_dir"
 	mkdir -p "$patch_dir"
-	rm -f "$patch_dir"/*.patch
-	if [[ ${#generated[@]} -gt 0 ]]; then
-		cp -- "${generated[@]}" "$patch_dir/"
+	if [[ ${#target_relpaths[@]} -gt 0 ]]; then
+		cp -R -- "$out_dir"/. "$patch_dir/"
 	fi
-	printf 'Exported %d patch(es) to patches/%s/:\n' "${#generated[@]}" "$program"
-	for patch in "${generated[@]}"; do
-		printf '  %s\n' "$(basename "$patch")"
+	printf 'Exported %d patch(es) to patches/%s/:\n' "${#target_relpaths[@]}" "$program"
+	for relpath in "${target_relpaths[@]}"; do
+		printf '  %s\n' "$relpath"
 	done
 )
 
