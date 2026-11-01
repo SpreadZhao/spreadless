@@ -5,16 +5,16 @@ Subject: [PATCH] temperature/cpu-temp: add CPU temperature component with
  sensor discovery
 
 ---
- components/temperature.c | 61 ++++++++++++++++++++++++++++++++++++++++
- config.h                 |  4 +++
- slstatus.h               |  1 +
- 3 files changed, 66 insertions(+)
+ components/temperature.c | 59 ++++++++++++++++++++++++++++++++++++++++
+ config.def.h             |  4 +++
+ slstatus.h               |  2 ++
+ 3 files changed, 65 insertions(+)
 
 diff --git a/components/temperature.c b/components/temperature.c
-index 7cf1394..c66e3e7 100644
+index 7cf1394..2645e42 100644
 --- a/components/temperature.c
 +++ b/components/temperature.c
-@@ -6,7 +6,68 @@
+@@ -6,7 +6,66 @@
  
  
  #if defined(__linux__)
@@ -24,8 +24,6 @@ index 7cf1394..c66e3e7 100644
 +	#include <string.h>
 +	#include <unistd.h>
 +
-+	#define SLSTATUS_MACROS_ONLY
-+	#include "../config.h"
 +	const char *
 +	cpu_temp(const char *file)
 +	{
@@ -76,28 +74,28 @@ index 7cf1394..c66e3e7 100644
 +			level = 0;
 +		if (level > 4)
 +			level = 4;
-+		color = degrees >= 80 ? SLSTATUS_TEMP_COLOR_CRITICAL :
-+		        degrees >= 60 ? SLSTATUS_TEMP_COLOR_WARNING : SLSTATUS_TEMP_COLOR_NORMAL;
++		color = degrees >= 80 ? temp_colors[2] :
++		        degrees >= 60 ? temp_colors[1] : temp_colors[0];
 +		return bprintf("^fg(%s)%jd%s^fg()", color, degrees, icons[level]);
 +	}
  
  	const char *
  	temp(const char *file)
-diff --git a/config.h b/config.h
-index 7b34604..31dfa52 100644
---- a/config.h
-+++ b/config.h
-@@ -2,6 +2,9 @@
+diff --git a/config.def.h b/config.def.h
+index 175ad17..cc61717 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -6,6 +6,9 @@ const unsigned int interval = 1000;
+ /* text to show if no value can be retrieved */
+ static const char unknown_str[] = "n/a";
  
- /* host configuration */
- #define SLSTATUS_INTERVAL            9000
-+#define SLSTATUS_TEMP_COLOR_NORMAL   "6a9955"
-+#define SLSTATUS_TEMP_COLOR_WARNING  "e6e6aa"
-+#define SLSTATUS_TEMP_COLOR_CRITICAL "ff0000"
- #define SLSTATUS_ARGS                { datetime, "%s", "%F %T" }
++/* temperature colors: normal, warning (>= 60C), critical (>= 80C) */
++const char *const temp_colors[3] = { "6a9955", "e6e6aa", "ff0000" };
++
+ /* maximum output string length */
+ #define MAXLEN 2048
  
- #ifdef SPREAD_HOST_HEADER
-@@ -31,6 +34,7 @@ static const char unknown_str[] = "-";
+@@ -21,6 +24,7 @@ static const char unknown_str[] = "n/a";
   *                                                     NULL on OpenBSD/FreeBSD
   * cat                 read arbitrary file             path
   * cpu_freq            cpu frequency in MHz            NULL
@@ -106,13 +104,14 @@ index 7b34604..31dfa52 100644
   * datetime            date and time                   format string (%F %T)
   * disk_free           free disk space in GB           mountpoint path (/)
 diff --git a/slstatus.h b/slstatus.h
-index 65aba87..f385e50 100644
+index 65aba87..9349449 100644
 --- a/slstatus.h
 +++ b/slstatus.h
-@@ -68,6 +68,7 @@ const char *swap_total(const char *unused);
+@@ -68,6 +68,8 @@ const char *swap_total(const char *unused);
  const char *swap_used(const char *unused);
  
  /* temperature */
++extern const char *const temp_colors[3];
 +const char *cpu_temp(const char *file);
  const char *temp(const char *);
  

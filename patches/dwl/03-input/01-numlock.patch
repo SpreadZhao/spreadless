@@ -4,15 +4,15 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] input/numlock: enable NumLock on keyboard initialization
 
 ---
- config.h | 1 +
- dwl.c    | 8 ++++++++
+ config.def.h | 1 +
+ dwl.c        | 8 ++++++++
  2 files changed, 9 insertions(+)
 
-diff --git a/config.h b/config.h
-index c7ff4df..bbdf47e 100644
---- a/config.h
-+++ b/config.h
-@@ -96,6 +96,7 @@ static const struct xkb_rule_names xkb_rules = {
+diff --git a/config.def.h b/config.def.h
+index e75e84a..5ad4bf5 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -70,6 +70,7 @@ static const struct xkb_rule_names xkb_rules = {
  
  static const int repeat_rate = 25;
  static const int repeat_delay = 600;
@@ -21,7 +21,7 @@ index c7ff4df..bbdf47e 100644
  /* Trackpad */
  static const int tap_to_click = 1;
 diff --git a/dwl.c b/dwl.c
-index b5a2a32..2122b25 100644
+index 96f30e4..5a4c37b 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -69,6 +69,7 @@

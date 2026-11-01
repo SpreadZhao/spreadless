@@ -9,7 +9,7 @@ For now, I only maintain two programs:
 - **slstatus**: a small program that supplies system information to the status bar.
 
 Both are packaged with Nix and have Home Manager modules, so you can build them
-and adjust their settings from your Nix configuration.
+and configure `config.h` from your Nix configuration.
 
 ## Build
 
@@ -51,17 +51,32 @@ programs independently:
 
   wayland.windowManager.dwl = {
     enable = true;
-    settings = {
-      SDWL_FONT = "Noto Sans:size=14";
-      SDWL_BAR_HPAD = 2;
-      SDWL_TOUCHPAD_SCROLL_FACTOR = 0.35;
+    fonts = [
+      "Noto Sans:size=14"
+      "Noto Sans CJK SC:size=14"
+      "Symbols Nerd Font:size=14"
+      "Noto Color Emoji:size=14"
+    ];
+    touchpad.scrollFactor = 0.35;
+    modkey = "WLR_MODIFIER_LOGO";
+    binds = {
+      "MODKEY, XKB_KEY_Return" = ''spawn, {.v = (const char*[]){ "footclient", NULL }}'';
+      "MODKEY, XKB_KEY_space" = ''spawn, {.v = (const char*[]){ "fuzzel", NULL }}'';
+      "MODKEY, XKB_KEY_b" = "togglebar, {0}";
+      "MODKEY, XKB_KEY_j" = "focusstack, {.i = +1}";
+      "MODKEY, XKB_KEY_k" = "focusstack, {.i = -1}";
+      "MODKEY, XKB_KEY_m" = "cyclelayout, {0}";
+      "MODKEY, XKB_KEY_f" = "togglefullscreen, {0}";
+      "MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_f" = "togglefloating, {0}";
+      "MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_c" = "killclient, {0}";
+      "MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_q" = "quit, {0}";
     };
   };
 
   programs.slstatus = {
     enable = true;
     interval = 9000;
-    settings.SLSTATUS_TEMP_COLOR_NORMAL = "6a9955";
+    tempColors.normal = "6a9955";
     components = [
       { function = "cpu_perc"; format = "%s"; }
       { function = "cpu_temp"; format = "%s"; }
@@ -82,11 +97,9 @@ Use `wayland.windowManager.dwl.finalPackage` and
 enabled by default and can be disabled with
 `wayland.windowManager.dwl.xwayland.enable = false`.
 
-Settings accept booleans, numbers, strings and `{ raw = "..."; }` C expressions
-or initializer lists. Each package receives one generated `host.h` included by
-`config.h` through `SPREAD_HOST_HEADER` after the default macro table. Direct
-package overrides support both `settings` and `configHeader`; slstatus also
-accepts a complete configuration through `conf`.
+Each module renders a complete `config.h` at evaluation time and copies it into
+the source tree before building. Direct package overrides accept `settings` or a
+complete `config.h` through `conf`.
 
 The [dwl reference](skills/spreadless/references/dwl.md) describes layouts,
 bindings, borders, the status bar and tablet support. The
@@ -99,10 +112,10 @@ battery and temperature components. slstatus writes newline-delimited text with
 | Path | Responsibility |
 | --- | --- |
 | `upstream/dwl/`, `upstream/slstatus/` | Read-only upstream submodules pinned to dwl 0.9 and slstatus 1.1 |
-| `patches/dwl/`, `patches/slstatus/` | Grouped `NN-group/NN-name.patch` queues |
+| `patches/dwl/`, `patches/slstatus/` | Grouped `NN-group/NN-name.patch` capability queues |
 | `nix/packages/` | Package builds and program-specific dependencies |
 | `nix/home-manager/` | Independent configuration modules and their combined import |
-| `nix/lib/` | Ordered patch discovery and C settings serialization |
+| `nix/lib/` | Ordered patch discovery and `config.h` generators |
 | `scripts/spreadless-queue` | Shared Git queue operations |
 | `scripts/build/` | Program-specific queue compilation checks |
 | `skills/spreadless/` | Maintenance rules and program references |
@@ -128,18 +141,14 @@ selected program; both worktrees may be open at once. `--repo PATH` selects a
 repository when running from elsewhere.
 
 Each program's queue is organized into contiguous functional groups
-(`NN-group/`), with cohesive patches (`NN-name.patch`) inside each group. Fold
-changes into the owning patch commit; add a new patch within the appropriate
-group for a distinct mechanism, extension or bug fix after its dependencies.
-Keep related code, declarations and configuration together. The dwl `06-keys`
-group owns all keyboard, mouse-button and scroll bindings, modifier keys and
-spawn commands. Apply it last, after the patches that define the functions used
-by its bindings. Feature patches own those functions and their settings. Each
-queue starts with `01-config/01-init.patch`, which initializes tracked
-`config.h`; `config.def.h` remains unchanged.
+(`NN-group/`), with cohesive capability patches (`NN-name.patch`) inside each
+group. Fold changes into the owning patch commit; add a new patch within the
+appropriate group for a distinct mechanism, extension or bug fix after its
+dependencies. Keep related code, declarations and `config.def.h` defaults
+together. Do not track `config.h` in Git; Nix renders `config.h` at build time.
 
 Commit subjects use `group/name: English summary` without a commit-type prefix.
-Export derives paths such as `02-bar/01-status-bar.patch` from the `group/name`
+Export derives paths such as `01-bar/01-status-bar.patch` from the `group/name`
 scope. Both `group` and `name` start with a letter, use one or two lowercase
 words separated by a hyphen, may include digits and contain at most 24
 characters. Export rejects invalid or duplicate scopes and non-contiguous groups

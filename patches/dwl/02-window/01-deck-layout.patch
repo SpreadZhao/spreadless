@@ -4,15 +4,34 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] window/deck-layout: add deck layout and 50% master ratio
 
 ---
- config.h |  3 ++-
- dwl.c    | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+), 1 deletion(-)
+ config.def.h | 11 ++++++-----
+ dwl.c        | 38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 5 deletions(-)
 
-diff --git a/config.h b/config.h
-index f24e85e..626d1db 100644
---- a/config.h
-+++ b/config.h
-@@ -65,6 +65,7 @@ static const Layout layouts[] = {
+diff --git a/config.def.h b/config.def.h
+index ed67f95..00e94cb 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -15,14 +15,14 @@ static const int status_rpad               = 2;
+ static const char *fonts[]                 = {
+ 	"monospace:size=10"
+ };
+-static const float rootcolor[]             = COLOR(0x000000ff);
++static const float rootcolor[]             = COLOR(0x222222ff);
+ /* This conforms to the xdg-protocol. Set the alpha to zero to restore the old behavior */
+ static const float fullscreen_bg[]         = {0.0f, 0.0f, 0.0f, 1.0f}; /* You can also use glsl colors */
+ static uint32_t colors[][3]                = {
+-	/*               fg          bg          border    */
++	/*               fg            bg            border          */
+ 	[SchemeNorm] = { 0xbbbbbbff, 0x222222ff, 0x444444ff },
+-	[SchemeSel]  = { 0xeeeeeeff, 0x005577ff, 0x005577ff },
+-	[SchemeUrg]  = { 0,          0,          0x770000ff },
++	[SchemeSel]  = { 0xeeeeeeff,  0x005577ff,  0x005577ff  },
++	[SchemeUrg]  = { 0,  0,  0x770000ff  },
+ };
+ 
+ /* tagging */
+@@ -44,6 +44,7 @@ static const Layout layouts[] = {
  	{ "[]=",      tile },
  	{ "><>",      NULL },    /* no layout function means floating behavior */
  	{ "[M]",      monocle },
@@ -20,7 +39,7 @@ index f24e85e..626d1db 100644
  };
  
  /* monitors */
-@@ -75,7 +76,7 @@ static const MonitorRule monrules[] = {
+@@ -54,7 +55,7 @@ static const MonitorRule monrules[] = {
     /* name        mfact  nmaster scale layout       rotate/reflect                x    y
      * example of a HiDPI laptop monitor:
      { "eDP-1",    0.5f,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 }, */

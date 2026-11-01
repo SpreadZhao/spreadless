@@ -9,7 +9,7 @@ distinct full, not charging and unknown states:
 https://tools.suckless.org/slstatus/patches/icons/slstatus-icons-1.0.patch
 ---
  components/battery.c | 42 ++++++++++++++++++++++++++++++++++++++++++
- config.h             |  1 +
+ config.def.h         |  1 +
  slstatus.h           |  1 +
  3 files changed, 44 insertions(+)
 
@@ -71,11 +71,11 @@ index f2dc393..ec298b1 100644
  	const char *
  	battery_state(const char *bat)
  	{
-diff --git a/config.h b/config.h
-index c445129..7b34604 100644
---- a/config.h
-+++ b/config.h
-@@ -22,6 +22,7 @@ static const char unknown_str[] = "-";
+diff --git a/config.def.h b/config.def.h
+index 100093e..175ad17 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -12,6 +12,7 @@ static const char unknown_str[] = "n/a";
  /*
   * function            description                     argument (example)
   *

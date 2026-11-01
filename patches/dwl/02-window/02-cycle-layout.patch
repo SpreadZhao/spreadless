@@ -4,9 +4,23 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] window/cycle-layout: cycle through tiled layouts
 
 ---
- dwl.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ config.def.h |  2 +-
+ dwl.c        | 17 +++++++++++++++++
+ 2 files changed, 18 insertions(+), 1 deletion(-)
 
+diff --git a/config.def.h b/config.def.h
+index 00e94cb..1ec23bb 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -147,7 +147,7 @@ static const Key keys[] = {
+ 	{ MODKEY,                    XKB_KEY_t,           setlayout,        {.v = &layouts[0]} },
+ 	{ MODKEY,                    XKB_KEY_f,           setlayout,        {.v = &layouts[1]} },
+ 	{ MODKEY,                    XKB_KEY_m,           setlayout,        {.v = &layouts[2]} },
+-	{ MODKEY,                    XKB_KEY_space,       setlayout,        {0} },
++	{ MODKEY,                    XKB_KEY_space,       cyclelayout,      {0} },
+ 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,       togglefloating,   {0} },
+ 	{ MODKEY,                    XKB_KEY_e,           togglefullscreen, {0} },
+ 	{ MODKEY,                    XKB_KEY_0,           view,             {.ui = ~0} },
 diff --git a/dwl.c b/dwl.c
 index dc662c6..30cead6 100644
 --- a/dwl.c

@@ -2,6 +2,8 @@
 set -euo pipefail
 
 worktree="${1:?usage: scripts/build/slstatus WORKTREE}"
+rm -f "$worktree/config.h"
 make -C "$worktree" clean
 make -C "$worktree" slstatus
 make -C "$worktree" clean
+rm -f "$worktree/config.h"

@@ -11,10 +11,10 @@ active monitor in the layout.
  1 file changed, 19 insertions(+)
 
 diff --git a/dwl.c b/dwl.c
-index f42ef13..b78a0c4 100644
+index 512da6f..ca1bd19 100644
 --- a/dwl.c
 +++ b/dwl.c
-@@ -3853,6 +3853,7 @@ updatemons(struct wl_listener *listener, void *data)
+@@ -3852,6 +3852,7 @@ updatemons(struct wl_listener *listener, void *data)
  	Client *c;
  	struct wlr_output_configuration_head_v1 *config_head;
  	Monitor *m;
@@ -22,7 +22,7 @@ index f42ef13..b78a0c4 100644
  
  	/* First remove from the layout the disabled monitors */
  	wl_list_for_each(m, &mons, link) {
-@@ -3893,6 +3894,7 @@ updatemons(struct wl_listener *listener, void *data)
+@@ -3892,6 +3893,7 @@ updatemons(struct wl_listener *listener, void *data)
  		config_head = wlr_output_configuration_head_v1_create(config, m->wlr_output);
  
  		/* Get the effective monitor geometry to use for surfaces */
@@ -30,7 +30,7 @@ index f42ef13..b78a0c4 100644
  		wlr_output_layout_get_box(output_layout, m->wlr_output, &m->m);
  		m->w = m->m;
  		wlr_scene_output_set_position(m->scene_output, m->m.x, m->m.y);
-@@ -3908,6 +3910,23 @@ updatemons(struct wl_listener *listener, void *data)
+@@ -3907,6 +3909,23 @@ updatemons(struct wl_listener *listener, void *data)
  
  		/* Calculate the effective monitor geometry to use for clients */
  		arrangelayers(m);

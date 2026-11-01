@@ -4,32 +4,24 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] input/scroll-factor: scale touchpad finger scroll delta
 
 ---
- config.h | 2 ++
- dwl.c    | 4 +++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ config.def.h | 1 +
+ dwl.c        | 4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/config.h b/config.h
-index fe26010..4e0cab6 100644
---- a/config.h
-+++ b/config.h
-@@ -15,6 +15,7 @@
- #define SDWL_FONT_FALLBACKS         "Noto Sans CJK SC:size=14", "Symbols Nerd Font:size=14", "Noto Color Emoji:size=14"
- #define SDWL_BAR_HPAD               2
- #define SDWL_STATUS_RPAD            2
-+#define SDWL_TOUCHPAD_SCROLL_FACTOR 1.0
- 
- #ifdef SPREAD_HOST_HEADER
- #include "host.h"
-@@ -99,6 +100,7 @@ static const int repeat_delay = 600;
+diff --git a/config.def.h b/config.def.h
+index 9fcd372..a6a3bde 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -73,6 +73,7 @@ static const int repeat_delay = 600;
  static const int numlock_on = 1;
  
  /* Trackpad */
-+static const double touchpad_scroll_factor = SDWL_TOUCHPAD_SCROLL_FACTOR;
++static const double touchpad_scroll_factor = 1.0;
  static const int tap_to_click = 1;
  static const int tap_and_drag = 1;
  static const int drag_lock = 1;
 diff --git a/dwl.c b/dwl.c
-index 6fff1e0..d6a2466 100644
+index 5065dfd..b2b6768 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -756,7 +756,9 @@ axisnotify(struct wl_listener *listener, void *data)

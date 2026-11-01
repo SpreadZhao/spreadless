@@ -5,15 +5,15 @@ Subject: [PATCH] window/focus: disable sloppy focus and follow windows across
  outputs
 
 ---
- config.h | 2 +-
- dwl.c    | 4 +++-
+ config.def.h | 2 +-
+ dwl.c        | 4 +++-
  2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/config.h b/config.h
-index 55b0fac..1063958 100644
---- a/config.h
-+++ b/config.h
-@@ -24,7 +24,7 @@
+diff --git a/config.def.h b/config.def.h
+index 11fb021..d0edbd7 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -4,7 +4,7 @@
                          ((hex >> 8) & 0xFF) / 255.0f, \
                          (hex & 0xFF) / 255.0f }
  /* appearance */

@@ -6,7 +6,7 @@
 }:
 let
   cfg = config.wayland.windowManager.dwl;
-  cSettings = import ../lib/c-settings.nix { inherit lib; };
+  dwlConfig = import ../lib/dwl-config.nix { inherit lib; };
 in
 {
   options.wayland.windowManager.dwl = {
@@ -15,20 +15,6 @@ in
       type = lib.types.package;
       default = pkgs.callPackage ../packages/dwl.nix { };
       description = "Base dwl package configured by this module.";
-    };
-    settings = cSettings.mkSettingsOption {
-      example = {
-        SDWL_FONT = "Noto Sans:size=14";
-        SDWL_BAR_HPAD = 2;
-        SDWL_STATUS_RPAD = 2;
-        SDWL_TOUCHPAD_SCROLL_FACTOR = 0.35;
-      };
-      description = ''
-        Compile-time `SDWL_*` macros supplied through one generated `host.h`.
-        Booleans become `0` or `1`, numbers are C literals, and strings are quoted.
-        Use `{ raw = "..."; }` for a single-line C expression or initializer list
-        without quoting.
-      '';
     };
     xwayland.enable = lib.mkOption {
       type = lib.types.bool;
@@ -51,20 +37,49 @@ in
       type = lib.types.package;
       readOnly = true;
       default = cfg.package.override {
-        inherit (cfg) settings;
         enableXWayland = cfg.xwayland.enable;
+        conf = dwlConfig.renderConfig {
+          inherit (cfg)
+            sloppyfocus
+            bypassSurfaceVisibility
+            borderpx
+            unfocusedBorderpx
+            snap
+            cursorSize
+            enablePrimarySelection
+            showbar
+            topbar
+            barHpad
+            statusRpad
+            fonts
+            rootcolor
+            fullscreenBg
+            colors
+            tags
+            logLevel
+            rules
+            layouts
+            monrules
+            xkbRules
+            repeatRate
+            repeatDelay
+            numlockOn
+            touchpad
+            mouse
+            tabletRules
+            modkey
+            binds
+            buttons
+            axes
+            ;
+        };
       };
-      description = "dwl package with the configured macros and XWayland setting.";
+      description = "dwl package built with the generated config.h and XWayland setting.";
     };
-  };
+  }
+  // dwlConfig.options;
+
   config = lib.mkIf cfg.enable {
-    assertions = [
-      (cSettings.mkPrefixAssertion {
-        prefix = "SDWL";
-        program = "dwl";
-        inherit (cfg) settings;
-      })
-    ];
     home.packages = [ cfg.finalPackage ];
   };
 }

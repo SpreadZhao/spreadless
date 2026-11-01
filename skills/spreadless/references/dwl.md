@@ -4,97 +4,67 @@
 
 | Group | Patch | Responsibility |
 | --- | --- | --- |
-| `01-config` | `config/init` | Initial tracked copy of the upstream configuration |
-| `01-config` | `config/host-config` | Compile-time `SPREAD_HOST_HEADER` include for `host.h` in `config.h` |
-| `02-bar` | `bar/status-bar` | Per-output bar rendering (`drwl.h`), fonts, padding, click targets and bounded newline status reader |
-| `02-bar` | `bar/barcolors` | Status text `^fg(RRGGBB)` and `^bg(RRGGBB)` color markup |
-| `02-bar` | `bar/usable-area` | Bar geometry refresh before arranging layers and client usable areas |
-| `02-bar` | `bar/scene-cleanup` | Scene output teardown before destroying monitor layers and bar buffers |
-| `03-window` | `window/theme` | Root, bar and border color defaults and `SDWL_*` color macros |
-| `03-window` | `window/deck-layout` | Deck (`[D]`) layout and 50% default master ratio |
-| `03-window` | `window/cycle-layout` | Layout cycling across non-null layouts |
-| `03-window` | `window/float-rules` | Application matching and monitor-relative floating window geometry |
-| `03-window` | `window/focus` | Focus policy (`sloppyfocus = 0`) and focus retention when moving clients across outputs |
-| `03-window` | `window/border` | Focused, unfocused and fullscreen border widths with fixed client content size |
-| `04-input` | `input/numlock` | NumLock activation on keyboard initialization |
-| `04-input` | `input/pointer-config` | Separate touchpad and mouse libinput natural-scrolling and acceleration settings |
-| `04-input` | `input/scroll-factor` | Touchpad finger scroll delta scaling (`SDWL_TOUCHPAD_SCROLL_FACTOR`) |
-| `04-input` | `input/primary-selection` | Primary-selection toggle (`enable_primary_selection`) |
-| `04-input` | `input/cursor-size` | Configurable XCursor size (`cursor_size`) |
-| `04-input` | `input/tablet` | Tablet-v2 pen input, pointer emulation, cursor shapes and `SDWL_TABLET_RULES` output mapping |
-| `05-monitor` | `monitor/restore-monitor` | Window output ownership and restoration of tags and floating geometry after output reconnection |
-| `05-monitor` | `monitor/cascade-restore` | Preservation of original output ownership and saved geometry across cascading disconnections |
-| `05-monitor` | `monitor/output-move` | Floating and saved window geometry offset updates when an active output moves in the layout |
-| `06-keys` | `keys/wm-bindings` | `Super` modifier, window-management, tag, layout, bar, monitor, VT and mouse bindings |
-| `06-keys` | `keys/spawn-bindings` | Terminal, launcher, lock, screenshot, clipboard, tray, notification and media/backlight command bindings |
+| `01-bar` | `bar/status-bar` | Per-output bar rendering (`drwl.h`), fonts, padding, click targets and bounded newline status reader |
+| `01-bar` | `bar/barcolors` | Status text `^fg(RRGGBB)` and `^bg(RRGGBB)` color markup |
+| `01-bar` | `bar/usable-area` | Bar geometry refresh before arranging layers and client usable areas |
+| `01-bar` | `bar/scene-cleanup` | Scene output teardown before destroying monitor layers and bar buffers |
+| `02-window` | `window/deck-layout` | Deck (`[D]`) layout and 50% default master ratio |
+| `02-window` | `window/cycle-layout` | Layout cycling across non-null layouts |
+| `02-window` | `window/float-rules` | Application matching and monitor-relative floating window geometry |
+| `02-window` | `window/focus` | Focus policy (`sloppyfocus = 0`) and focus retention when moving clients across outputs |
+| `02-window` | `window/border` | Focused, unfocused and fullscreen border widths with fixed client content size |
+| `03-input` | `input/numlock` | NumLock activation on keyboard initialization |
+| `03-input` | `input/pointer-config` | Separate touchpad and mouse libinput natural-scrolling and acceleration settings |
+| `03-input` | `input/scroll-factor` | Touchpad finger scroll delta scaling (`touchpad_scroll_factor`) |
+| `03-input` | `input/primary-selection` | Primary-selection toggle (`enable_primary_selection`) |
+| `03-input` | `input/cursor-size` | Configurable XCursor size (`cursor_size`) |
+| `03-input` | `input/tablet` | Tablet-v2 pen input, pointer emulation, cursor shapes and `TabletRule` output mapping |
+| `04-monitor` | `monitor/restore-monitor` | Window output ownership and restoration of tags and floating geometry after output reconnection |
+| `04-monitor` | `monitor/cascade-restore` | Preservation of original output ownership and saved geometry across cascading disconnections |
+| `04-monitor` | `monitor/output-move` | Floating and saved window geometry offset updates when an active output moves in the layout |
 
-The `06-keys` group is last in the dwl queue. It owns the final `keys[]`,
-`buttons[]` and `axes[]` tables in `config.h`. Define feature callbacks in their
-owning patches before binding them in `keys/*`. Change shortcut assignments only
-in `06-keys`; feature patches must leave the binding tables unchanged.
+Feature patches touch `dwl.c` and declare minimal defaults in `config.def.h` so
+every commit in the queue compiles standalone. `config.h` is not tracked in Git.
 
 ## Packaging
 
 dwl uses a standalone Nix derivation with wlroots 0.20 and optional XWayland
-support. Queue checks always compile with XWayland enabled. The build copies the
-generated `host.h` into the source tree and sets `CPPFLAGS -DSPREAD_HOST_HEADER`;
-keep this packaging separate from slstatus. Home Manager options are under
-`wayland.windowManager.dwl`.
+support. Queue checks always compile with XWayland enabled. `nix/lib/dwl-config.nix`
+renders a complete `config.h` copied into the source tree during `preBuild`.
+Home Manager options are under `wayland.windowManager.dwl`.
 
 ## Configuration and behavior
 
 The Home Manager module installs `wayland.windowManager.dwl.finalPackage`.
-`package` selects the base derivation; `finalPackage` is that package with
-`settings` and `xwayland.enable` applied. XWayland is enabled by default. The
-caller supplies the login entry, session lifecycle and status producer, and uses
-`systemd.variables` to import session variables into systemd and D-Bus.
+`package` selects the base derivation; `finalPackage` is that package with the
+generated `config.h` and `xwayland.enable` applied. XWayland is enabled by
+default. The caller supplies the login entry, session lifecycle and status
+producer, and uses `systemd.variables` to import session variables into systemd
+and D-Bus.
 
-`settings` accepts `SDWL_*` macro names. Booleans become `0` or `1`, numbers are
-emitted as C literals, strings are quoted, and `{ raw = "..."; }` supplies a
-single-line C expression or initializer list. Empty settings use the `SDWL_*`
-defaults at the top of `config.h`. Configured settings emit `#undef` and
-`#define` pairs in one generated `host.h` included through `SPREAD_HOST_HEADER`.
-Direct package overrides accept both `settings` and `configHeader` (C header
-text, a Nix path to a header, or a derivation that produces one).
+`nix/lib/dwl-config.nix` defines options for all `config.h` fields:
+- Appearance and bar: `sloppyfocus`, `bypassSurfaceVisibility`, `borderpx`,
+  `unfocusedBorderpx`, `snap`, `cursorSize`, `enablePrimarySelection`, `showbar`,
+  `topbar`, `barHpad`, `statusRpad`, `fonts`, `rootcolor`, `fullscreenBg`,
+  `colors.{norm,sel,urg}.{fg,bg,border}`, `tags` and `logLevel`.
+- Window, layout and monitor rules: `rules` (matching `appId` and `title`,
+  with `tags`, `isFloating`, `monitor`, `floatW`, `floatH` and `floatY`),
+  `layouts` and `monrules`.
+- Input devices: `xkbRules`, `repeatRate`, `repeatDelay`, `numlockOn`,
+  `touchpad` (`scrollFactor`, `tapToClick`, `tapAndDrag`, `dragLock`,
+  `naturalScrolling`, `disableWhileTyping`, `leftHanded`,
+  `middleButtonEmulation`, `scrollMethod`, `clickMethod`, `sendEventsMode`,
+  `accelProfile`, `accelSpeed` and `buttonMap`), `mouse` (`naturalScrolling`,
+  `accelProfile` and `accelSpeed`) and `tabletRules` (`{ name, output }` pairs).
+- Bindings: `modkey`, `binds`, `buttons` and `axes`.
 
-`SDWL_TOUCHPAD_SCROLL_FACTOR` defaults to `1.0` and scales finger scrolling only.
-Mouse wheel events keep their original delta. Display layouts can be applied by
-startup commands using a Wayland output management client.
-
-By default, focused windows have a white border 2 logical pixels wide.
-Unfocused windows have no visible border. `SDWL_BORDERPX` and
-`SDWL_UNFOCUSED_BORDERPX` set the visible border widths for focused and
-unfocused windows (defaults: `2` and `0`). Windows reserve the larger width in
-both states so focus changes leave the content size and position unchanged.
-With the defaults, unfocused windows retain a transparent margin 2 logical
-pixels wide. Fullscreen windows have no border or reserved margin.
-`SDWL_SEL_BORDER`, `SDWL_NORM_BORDER` and `SDWL_URG_BORDER` set the border
-colors. Urgent windows also have no border when unfocused with the default
-widths.
-
-The default tiled layout gives two tiled windows equal widths on each output.
-With more windows, the master area occupies half the width and the stack shares
-the other half. `Super+H` and `Super+L` adjust this ratio for the selected output.
-`Super+Shift+H` sets it to 50%. `Super+I` increases the number of windows
-assigned to the master area; `Super+D` decreases it.
-
-`Super+M` cycles through Tile (`[]=`), Monocle (`[M]`) and Deck (`[D]`) on the
-selected output. `Super+F` toggles fullscreen for the focused window;
-`Super+Shift+F` toggles floating. `Super+Backspace` moves the focused tiled window
-to the front of the tiling order. If it is already first, the next tiled window
-takes its place.
-
-`Super+J` and `Super+K` select the next or previous window. `Super+,` and
-`Super+.` select the adjacent output. `Super+Shift+,` and `Super+Shift+.` move
-the focused window to that output and keep keyboard focus on it.
-
-`Super+1` through `Super+9` select tags. Adding Ctrl toggles a tag in the view;
-adding Shift assigns the focused window to that tag; adding both toggles the
-window's membership. `Super+Tab` returns to the previous tag view. `Super+0`
-views all tags, and `Super+Shift+0` assigns the focused window to all tags.
-
-`Super+left mouse button` drags a window, and `Super+right mouse button` resizes
-it. Both operations make the window floating.
+`binds` maps `"mod, keysym"` attribute names (for example,
+`"MODKEY, XKB_KEY_Return"` or `"0, XKB_KEY_XF86AudioMute"`) to `"func, arg"` C
+initializers (such as `''spawn, SHCMD("fuzzel")''` or `"focusstack, {.i = +1}"`),
+emitting `{ ${key}, ${action} },` entries in `keys[]`. `buttons` takes
+`"mod, button, func, arg, click"` strings for `buttons[]`, and `axes` takes
+`"mod, dir, func, arg"` strings for `axes[]` (or emits `{0},` when empty). Direct
+package overrides accept `settings` or a complete `config.h` through `conf`.
 
 ## Output reconnection
 
@@ -111,10 +81,6 @@ by Eldar Yusupov and 6z7y to dwl 0.9 and wlroots 0.20.
 
 ## Status bar
 
-`Super+B` shows or hides the bar on the selected output. Left-clicking a tag
-selects it; right-clicking toggles it in the view. With Super held, left-clicking
-assigns the focused window to the tag, and right-clicking toggles its membership.
-
 The caller sends newline-delimited status text to standard input, for example
 with `slstatus -s`. Every output shows the latest complete line. Each
 line can contain up to 1023 bytes, including markup but excluding the newline.
@@ -126,54 +92,23 @@ The bar supports the community
 [barcolors syntax](https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/barcolors)
 by Kerberoge. `^fg(RRGGBB)` sets the foreground and `^bg(RRGGBB)` sets the
 background. Colors use six hexadecimal digits without a `#` prefix. `^fg()` and
-`^bg()` restore `SDWL_NORM_FG` and `SDWL_NORM_BG`, respectively. Invalid markers
-appear as ordinary text. Markup applies only to status text and does not
+`^bg()` restore `colors.norm.fg` and `colors.norm.bg`, respectively. Invalid
+markers appear as ordinary text. Markup applies only to status text and does not
 contribute to its width or click area.
 
 ```text
 ^fg(ffc66d)23^fg(3181a7)41^fg()
 ```
 
-`SDWL_FONT` selects the primary font, which defaults to `Noto Sans:size=14`.
-`SDWL_FONT_FALLBACKS` is a comma-separated list of C strings, supplied through
-the Home Manager module's `raw` interface. Its defaults are Noto Sans CJK SC,
-Symbols Nerd Font and Noto Color Emoji, all at `size=14`.
-
-`SDWL_BAR_HPAD` sets the padding on each side of tags, layout symbols and window
-titles. `SDWL_STATUS_RPAD` sets the status text's right padding. Both default to
-2 logical pixels and follow the output scale. Bar height follows the font.
-
 ## Tablet configuration
 
-`SDWL_TABLET_RULES` is a comma-separated list of `{ "device", "output" }` pairs.
-Rules match the exact input device name. The full tablet area maps to the named
-output. If no rule matches, or the named output is absent from the layout, the
-tablet maps to the whole layout. The compositor sends pen pressure and tilt
-through tablet-v2 and emulates pointer input for clients without tablet support.
-Tablet pad shortcuts can use keyboard events through input-remapper.
+`tabletRules` is a list of `{ name, output }` mappings. Rules match the exact
+input device name. The full tablet area maps to the named output. If no rule
+matches, or the named output is absent from the layout, the tablet maps to the
+whole layout. The compositor sends pen pressure and tilt through tablet-v2 and
+emulates pointer input for clients without tablet support. Tablet pad shortcuts
+can use keyboard events through input-remapper.
 
 This implementation adapts the community
 [tablet-input patch](https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/tablet-input)
 to dwl 0.9 and wlroots 0.20.
-
-## Desktop tools
-
-`Super+Return` opens a Foot client. `Super+Shift+Return` opens one with the
-`dropdown-foot` app ID. `Super+Space` opens fuzzel.
-
-`Super+Shift+L` locks with swaylock. `Super+Ctrl+Shift+L` runs
-`$SCRIPT_HOME/dwl/dwl_lock.sh` to lock and turn off the displays.
-
-`Super+Shift+A` runs `$SCRIPT_HOME/util/screenshot.sh`;
-`Super+Ctrl+Shift+A` runs it with `-o`.
-`Super+Shift+V` runs `$SCRIPT_HOME/util/clipboard_history.sh`, `Super+T` runs
-`$SCRIPT_HOME/dwl/tray.sh`, `Super+Ctrl+Shift+N` runs
-`notification-history browse`, and `Super+Z` launches shmooz. `SCRIPT_HOME`
-defaults to `$HOME/scripts`. The caller supplies these scripts and applications.
-
-`Super+Shift+C` closes the focused window, and `Super+Shift+Q` exits dwl.
-`Super+Ctrl+F1` through `Super+Ctrl+F12` select Linux virtual terminals.
-Dedicated keys adjust volume and display brightness or toggle speaker and
-microphone mute.
-
-Windows with app IDs `swayimg-pin` and `satty` open as floating windows.

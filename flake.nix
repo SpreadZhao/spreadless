@@ -51,13 +51,12 @@
             their revisions only for an upstream upgrade. Author patches in
             `.worktree/PROGRAM/` and export to `patches/PROGRAM/`.
           - Organize each program's queue into contiguous functional groups (`NN-group/`),
-            with low-coupling, high-cohesion patches (`NN-name.patch`) inside each group.
-            Fold changes into the owning patch; add a patch for a distinct mechanism,
-            extension or bug fix after its dependencies. The dwl `keys` group owns all
-            keyboard, mouse-button and scroll bindings, modifier keys and spawn commands,
-            and stays last in the dwl queue.
-          - `01-config/01-init.patch` only initializes tracked `config.h`. Keep
-            `config.def.h` unchanged throughout each series. Every commit must compile.
+            with low-coupling, high-cohesion capability patches (`NN-name.patch`) inside
+            each group. Fold changes into the owning patch; add a patch for a distinct
+            mechanism, extension or bug fix after its dependencies.
+          - Feature patches touch `.c`/`.h` implementation files and update `config.def.h`
+            with minimal default declarations so every commit compiles standalone. Do not
+            track `config.h` in Git; Nix renders the complete `config.h` at build time.
           - Subjects use `group/name: English summary` without a commit-type prefix.
             Export derives `NN-group/NN-name.patch` from the scope. Both `group` and
             `name` start with a letter and contain one or two lowercase words, with

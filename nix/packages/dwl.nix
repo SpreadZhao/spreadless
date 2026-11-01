@@ -20,20 +20,21 @@
   writeText,
   enableXWayland ? true,
   settings ? { },
-  configHeader ? "",
+  conf ? null,
   upstreamSrc ? ../../upstream/dwl,
   patchesDir ? ../../patches/dwl,
 }:
 
 let
-  cSettings = import ../lib/c-settings.nix { inherit lib; };
-  headerFile = cSettings.resolveHeader {
-    inherit writeText settings configHeader;
-  };
-
+  dwlConfig = import ../lib/dwl-config.nix { inherit lib; };
   readPatches = import ../lib/patches.nix { inherit lib; };
   patchFiles = readPatches patchesDir;
-
+  resolvedConf = if conf != null then conf else dwlConfig.renderConfig settings;
+  configFile =
+    if builtins.isPath resolvedConf || lib.isDerivation resolvedConf then
+      resolvedConf
+    else
+      writeText "dwl-config.h" resolvedConf;
 in
 stdenv.mkDerivation {
   pname = "spread-dwl";
@@ -67,8 +68,7 @@ stdenv.mkDerivation {
   ];
 
   preBuild = ''
-    cp ${headerFile} host.h
-    export CPPFLAGS="''${CPPFLAGS:+$CPPFLAGS }-DSPREAD_HOST_HEADER"
+    cp ${configFile} config.h
   '';
 
   outputs = [

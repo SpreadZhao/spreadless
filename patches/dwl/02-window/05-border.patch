@@ -4,38 +4,32 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] window/border: keep client content size stable across focus
  changes
 
-Reserve the larger configured border width in both focus states and update
-only border rectangles when focus changes so client content keeps the same
-size and position. Fullscreen windows reserve no border space.
+Reserve the smaller configured border width in both focus states and draw
+any extra border width over the inner window edge so focus changes keep
+client content size and position unchanged without leaving gaps between
+windows. Pass pointer hit-testing through overlaid border rectangles to the
+client surface underneath. Fullscreen windows reserve no border space.
 ---
- config.h |  5 ++++-
- dwl.c    | 39 ++++++++++++++++++++++++++++-----------
- 2 files changed, 32 insertions(+), 12 deletions(-)
+ config.def.h |  3 ++-
+ dwl.c        | 44 +++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 35 insertions(+), 12 deletions(-)
 
-diff --git a/config.h b/config.h
-index 1063958..c7ff4df 100644
---- a/config.h
-+++ b/config.h
-@@ -1,5 +1,7 @@
- /* host configuration */
- #define SDWL_ROOTCOLOR              0x000000ff
-+#define SDWL_BORDERPX               2
-+#define SDWL_UNFOCUSED_BORDERPX     0
- #define SDWL_NORM_FG                0xd4d4d4ff
- #define SDWL_NORM_BG                0x000000ff
- #define SDWL_NORM_BORDER            0x72737aff
-@@ -26,7 +28,8 @@
+diff --git a/config.def.h b/config.def.h
+index d0edbd7..e75e84a 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -6,7 +6,8 @@
  /* appearance */
  static const int sloppyfocus               = 0;  /* focus follows mouse */
  static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 -static const unsigned int borderpx         = 1;  /* border pixel of windows */
-+static const unsigned int borderpx         = SDWL_BORDERPX; /* visible border width when focused */
-+static const unsigned int unfocused_borderpx = SDWL_UNFOCUSED_BORDERPX;
++static const unsigned int borderpx         = 2; /* visible border width when focused */
++static const unsigned int unfocused_borderpx = 0;
  static const unsigned int snap             = 32; /* snap pixel */
  static const int showbar                   = 1; /* 0 means no bar */
  static const int topbar                    = 1; /* 0 means bottom bar */
 diff --git a/dwl.c b/dwl.c
-index bb0ed26..b5a2a32 100644
+index bb0ed26..96f30e4 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -385,6 +385,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
@@ -51,7 +45,7 @@ index bb0ed26..b5a2a32 100644
  	c = toplevel->base->data = ecalloc(1, sizeof(*c));
  	c->surface.xdg = toplevel->base;
 -	c->bw = borderpx;
-+	c->bw = MAX(borderpx, unfocused_borderpx);
++	c->bw = MIN(borderpx, unfocused_borderpx);
  
  	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
  	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
@@ -79,7 +73,7 @@ index bb0ed26..b5a2a32 100644
  		goto unset_fullscreen;
  	}
  
-+	c->bw = c->isfullscreen ? 0 : MAX(borderpx, unfocused_borderpx);
++	c->bw = c->isfullscreen ? 0 : MIN(borderpx, unfocused_borderpx);
  	for (i = 0; i < 4; i++) {
  		c->border[i] = wlr_scene_rect_create(c->scene, 0, 0,
  			(float[])COLOR(colors[c->isurgent ? SchemeUrg : SchemeNorm][ColBorder]));
@@ -98,46 +92,58 @@ index bb0ed26..b5a2a32 100644
  
  	client_set_size(c, c->geom.width - 2 * c->bw, c->geom.height - 2 * c->bw);
  	client_get_clip(c, &clip);
-@@ -2728,6 +2727,24 @@ run(char *startup_cmd)
+@@ -2728,6 +2727,23 @@ run(char *startup_cmd)
  	wl_display_run(dpy);
  }
  
 +void
 +setborderwidth(Client *c, unsigned int bw)
 +{
-+	int inset;
++	int sideh;
 +
 +	/* Keep border space fixed so focus changes do not resize content. */
 +	bw = c->isfullscreen ? 0 : bw;
-+	inset = c->bw - bw;
-+	wlr_scene_rect_set_size(c->border[0], c->geom.width - 2 * inset, bw);
-+	wlr_scene_rect_set_size(c->border[1], c->geom.width - 2 * inset, bw);
-+	wlr_scene_rect_set_size(c->border[2], bw, c->geom.height - 2 * c->bw);
-+	wlr_scene_rect_set_size(c->border[3], bw, c->geom.height - 2 * c->bw);
-+	wlr_scene_node_set_position(&c->border[0]->node, inset, inset);
-+	wlr_scene_node_set_position(&c->border[1]->node, inset, c->geom.height - c->bw);
-+	wlr_scene_node_set_position(&c->border[2]->node, inset, c->bw);
-+	wlr_scene_node_set_position(&c->border[3]->node, c->geom.width - c->bw, c->bw);
++	sideh = MAX(0, c->geom.height - 2 * (int)bw);
++	wlr_scene_rect_set_size(c->border[0], c->geom.width, bw);
++	wlr_scene_rect_set_size(c->border[1], c->geom.width, bw);
++	wlr_scene_rect_set_size(c->border[2], bw, sideh);
++	wlr_scene_rect_set_size(c->border[3], bw, sideh);
++	wlr_scene_node_set_position(&c->border[1]->node, 0, c->geom.height - bw);
++	wlr_scene_node_set_position(&c->border[2]->node, 0, bw);
++	wlr_scene_node_set_position(&c->border[3]->node, c->geom.width - bw, bw);
 +}
 +
  void
  setcursor(struct wl_listener *listener, void *data)
  {
-@@ -2783,7 +2800,7 @@ setfullscreen(Client *c, int fullscreen)
+@@ -2783,7 +2799,7 @@ setfullscreen(Client *c, int fullscreen)
  	c->isfullscreen = fullscreen;
  	if (!c->mon || !client_surface(c)->mapped)
  		return;
 -	c->bw = fullscreen ? 0 : borderpx;
-+	c->bw = fullscreen ? 0 : MAX(borderpx, unfocused_borderpx);
++	c->bw = fullscreen ? 0 : MIN(borderpx, unfocused_borderpx);
  	client_set_fullscreen(c, fullscreen);
  	wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
  			? LyrFS : c->isfloating ? LyrFloat : LyrTile]);
-@@ -3792,7 +3809,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
+@@ -3696,6 +3712,12 @@ xytonode(double x, double y, struct wlr_surface **psurface,
+ 				!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
+ 			continue;
+ 
++		if (node->type == WLR_SCENE_NODE_RECT && node->data) {
++			Client *c = node->data;
++			node = wlr_scene_node_at(&c->scene_surface->node, x, y, nx, ny);
++			if (!node)
++				continue;
++		}
+ 		if (node->type == WLR_SCENE_NODE_BUFFER) {
+ 			scene_surface = wlr_scene_surface_try_from_buffer(
+ 					wlr_scene_buffer_from_node(node));
+@@ -3792,7 +3814,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
  	c = xsurface->data = ecalloc(1, sizeof(*c));
  	c->surface.xwayland = xsurface;
  	c->type = X11;
 -	c->bw = client_is_unmanaged(c) ? 0 : borderpx;
-+	c->bw = client_is_unmanaged(c) ? 0 : MAX(borderpx, unfocused_borderpx);
++	c->bw = client_is_unmanaged(c) ? 0 : MIN(borderpx, unfocused_borderpx);
  
  	/* Listen to the various events it can emit */
  	LISTEN(&xsurface->events.associate, &c->associate, associatex11);
