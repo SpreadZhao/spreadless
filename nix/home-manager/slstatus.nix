@@ -7,20 +7,19 @@
 let
   cfg = config.programs.slstatus;
   cSettings = import ../lib/c-settings.nix { inherit lib; };
-  header = cSettings.renderHeader cfg.settings;
-  conf = ''
-    const unsigned int interval = ${toString cfg.interval};
-    static const char unknown_str[] = "-";
-    #define MAXLEN 1024
-    static const struct arg args[] = {
-      ${lib.concatMapStringsSep "\n" (
-        component:
-        "{ ${component.function}, ${builtins.toJSON component.format}, ${
-          if component.argument == null then "NULL" else builtins.toJSON component.argument
-        } },"
-      ) cfg.components}
+  componentArgs = lib.concatMapStringsSep ", " (
+    component:
+    "{ ${component.function}, ${builtins.toJSON component.format}, ${
+      if component.argument == null then "NULL" else builtins.toJSON component.argument
+    } }"
+  ) cfg.components;
+  effectiveSettings = {
+    SLSTATUS_INTERVAL = cfg.interval;
+    SLSTATUS_ARGS = {
+      raw = componentArgs;
     };
-  '';
+  }
+  // cfg.settings;
 in
 {
   options.programs.slstatus = {
@@ -35,9 +34,7 @@ in
       default = 9000;
       description = "Refresh interval in milliseconds.";
     };
-    settings = lib.mkOption {
-      type = lib.types.attrsOf cSettings.valueType;
-      default = { };
+    settings = cSettings.mkSettingsOption {
       example.SLSTATUS_TEMP_COLOR_NORMAL = "6a9955";
       description = ''
         Compile-time SLSTATUS_* macros written to host.h. Booleans become 0 or 1,
@@ -77,8 +74,7 @@ in
       type = lib.types.package;
       readOnly = true;
       default = cfg.package.override {
-        inherit conf;
-        configHeader = header;
+        settings = effectiveSettings;
       };
       description = "slstatus package with the configured components, interval and macros.";
     };
@@ -89,12 +85,11 @@ in
         assertion = cfg.components != [ ];
         message = "slstatus requires at least one component.";
       }
-      {
-        assertion = lib.all (name: builtins.match "SLSTATUS_[A-Z0-9_]+" name != null) (
-          builtins.attrNames cfg.settings
-        );
-        message = "slstatus settings must use SLSTATUS_* macro names.";
-      }
+      (cSettings.mkPrefixAssertion {
+        prefix = "SLSTATUS";
+        program = "slstatus";
+        inherit (cfg) settings;
+      })
     ];
     home.packages = [ cfg.finalPackage ];
   };

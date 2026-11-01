@@ -11,12 +11,12 @@ The drawing helper retains its upstream license and attribution in drwl.h.
 ---
  Makefile  |   2 +-
  README.md |  36 ++--
- config.h  |  34 +++-
+ config.h  |  28 ++-
  drwl.h    | 310 ++++++++++++++++++++++++++++++++++
  dwl.1     | 112 ++----------
  dwl.c     | 497 ++++++++++++++++++++++++++++++++++++++++++++----------
  util.h    |  17 --
- 7 files changed, 774 insertions(+), 234 deletions(-)
+ 7 files changed, 768 insertions(+), 234 deletions(-)
  create mode 100644 drwl.h
 
 diff --git a/Makefile b/Makefile
@@ -108,27 +108,20 @@ index fd72785..000a4f6 100644
  - Support screen lockers via ext-session-lock-v1 protocol
  - Various Wayland protocols
 diff --git a/config.h b/config.h
-index 13c5322..85f0bab 100644
+index 05e5c9b..593d64a 100644
 --- a/config.h
 +++ b/config.h
-@@ -1,3 +1,16 @@
-+#ifndef SDWL_FONT
-+#define SDWL_FONT "Noto Sans:size=14"
-+#endif
-+#ifndef SDWL_FONT_FALLBACKS
-+#define SDWL_FONT_FALLBACKS "Noto Sans CJK SC:size=14", "Symbols Nerd Font:size=14", "Noto Color Emoji:size=14"
-+#endif
-+#ifndef SDWL_BAR_HPAD
-+#define SDWL_BAR_HPAD 2
-+#endif
-+#ifndef SDWL_STATUS_RPAD
-+#define SDWL_STATUS_RPAD 2
-+#endif
+@@ -1,4 +1,9 @@
+ /* host configuration */
++#define SDWL_FONT                   "Noto Sans:size=14"
++#define SDWL_FONT_FALLBACKS         "Noto Sans CJK SC:size=14", "Symbols Nerd Font:size=14", "Noto Color Emoji:size=14"
++#define SDWL_BAR_HPAD               2
++#define SDWL_STATUS_RPAD            2
 +
- /* Taken from https://github.com/djpohly/dwl/issues/466 */
- #define COLOR(hex)    { ((hex >> 24) & 0xFF) / 255.0f, \
-                         ((hex >> 16) & 0xFF) / 255.0f, \
-@@ -8,15 +21,24 @@ static const int sloppyfocus               = 1;  /* focus follows mouse */
+ #ifdef SPREAD_HOST_HEADER
+ #include "host.h"
+ #endif
+@@ -13,15 +18,26 @@ static const int sloppyfocus               = 1;  /* focus follows mouse */
  static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
  static const unsigned int borderpx         = 1;  /* border pixel of windows */
  static const unsigned int snap             = 32; /* snap pixel */
@@ -138,6 +131,8 @@ index 13c5322..85f0bab 100644
 -static const float urgentcolor[]           = COLOR(0xff0000ff);
 +static const int showbar                   = 1; /* 0 means no bar */
 +static const int topbar                    = 1; /* 0 means bottom bar */
++static const int bar_hpad                  = SDWL_BAR_HPAD;
++static const int status_rpad               = SDWL_STATUS_RPAD;
 +static const char *fonts[]                 = {
 +	SDWL_FONT,
 +	SDWL_FONT_FALLBACKS,
@@ -606,7 +601,7 @@ index 7fee870..e6a7ee5 100644
  .Xr dwm 1 ,
  .Xr foot 1 ,
 diff --git a/dwl.c b/dwl.c
-index 4cfd0fd..33f47df 100644
+index 4cfd0fd..c6ec00d 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -1,11 +1,13 @@
@@ -1447,8 +1442,8 @@ index 4cfd0fd..33f47df 100644
 +		die("Could not load font");
 +
 +	m->b.scale = m->wlr_output->scale;
-+	m->lrpad = 2 * (int)roundf(SDWL_BAR_HPAD * m->wlr_output->scale);
-+	m->statuspad = (int)roundf(SDWL_STATUS_RPAD * m->wlr_output->scale);
++	m->lrpad = 2 * (int)roundf((float)bar_hpad * m->wlr_output->scale);
++	m->statuspad = (int)roundf((float)status_rpad * m->wlr_output->scale);
 +	m->b.height = m->drw->font->height + 2;
 +	m->b.real_height = (int)((float)m->b.height / m->wlr_output->scale);
 +}

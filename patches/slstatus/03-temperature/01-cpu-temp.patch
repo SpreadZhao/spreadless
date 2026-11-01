@@ -5,16 +5,16 @@ Subject: [PATCH] temperature/cpu-temp: add CPU temperature component with
  sensor discovery
 
 ---
- components/temperature.c | 69 ++++++++++++++++++++++++++++++++++++++++
- config.h                 |  1 +
+ components/temperature.c | 61 ++++++++++++++++++++++++++++++++++++++++
+ config.h                 |  4 +++
  slstatus.h               |  1 +
- 3 files changed, 71 insertions(+)
+ 3 files changed, 66 insertions(+)
 
 diff --git a/components/temperature.c b/components/temperature.c
-index 7cf1394..3a55ad1 100644
+index 7cf1394..c66e3e7 100644
 --- a/components/temperature.c
 +++ b/components/temperature.c
-@@ -6,7 +6,76 @@
+@@ -6,7 +6,68 @@
  
  
  #if defined(__linux__)
@@ -24,16 +24,8 @@ index 7cf1394..3a55ad1 100644
 +	#include <string.h>
 +	#include <unistd.h>
 +
-+	#ifndef SLSTATUS_TEMP_COLOR_NORMAL
-+	#define SLSTATUS_TEMP_COLOR_NORMAL "6a9955"
-+	#endif
-+	#ifndef SLSTATUS_TEMP_COLOR_WARNING
-+	#define SLSTATUS_TEMP_COLOR_WARNING "e6e6aa"
-+	#endif
-+	#ifndef SLSTATUS_TEMP_COLOR_CRITICAL
-+	#define SLSTATUS_TEMP_COLOR_CRITICAL "ff0000"
-+	#endif
-+
++	#define SLSTATUS_MACROS_ONLY
++	#include "../config.h"
 +	const char *
 +	cpu_temp(const char *file)
 +	{
@@ -92,10 +84,20 @@ index 7cf1394..3a55ad1 100644
  	const char *
  	temp(const char *file)
 diff --git a/config.h b/config.h
-index 2cfd84c..c72631d 100644
+index 7b34604..31dfa52 100644
 --- a/config.h
 +++ b/config.h
-@@ -21,6 +21,7 @@ static const char unknown_str[] = "-";
+@@ -2,6 +2,9 @@
+ 
+ /* host configuration */
+ #define SLSTATUS_INTERVAL            9000
++#define SLSTATUS_TEMP_COLOR_NORMAL   "6a9955"
++#define SLSTATUS_TEMP_COLOR_WARNING  "e6e6aa"
++#define SLSTATUS_TEMP_COLOR_CRITICAL "ff0000"
+ #define SLSTATUS_ARGS                { datetime, "%s", "%F %T" }
+ 
+ #ifdef SPREAD_HOST_HEADER
+@@ -31,6 +34,7 @@ static const char unknown_str[] = "-";
   *                                                     NULL on OpenBSD/FreeBSD
   * cat                 read arbitrary file             path
   * cpu_freq            cpu frequency in MHz            NULL

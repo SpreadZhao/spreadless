@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:18:32 +0800
+Subject: [PATCH] config/host-config: add compile-time host header hook
+
+---
+ config.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/config.h b/config.h
+index 13c5322..05e5c9b 100644
+--- a/config.h
++++ b/config.h
+@@ -1,3 +1,8 @@
++/* host configuration */
++#ifdef SPREAD_HOST_HEADER
++#include "host.h"
++#endif
++
+ /* Taken from https://github.com/djpohly/dwl/issues/466 */
+ #define COLOR(hex)    { ((hex >> 24) & 0xFF) / 255.0f, \
+                         ((hex >> 16) & 0xFF) / 255.0f, \

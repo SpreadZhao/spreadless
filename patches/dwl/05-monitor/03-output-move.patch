@@ -11,7 +11,7 @@ active monitor in the layout.
  1 file changed, 19 insertions(+)
 
 diff --git a/dwl.c b/dwl.c
-index 4b93b7a..8f1daa3 100644
+index f42ef13..b78a0c4 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -3853,6 +3853,7 @@ updatemons(struct wl_listener *listener, void *data)

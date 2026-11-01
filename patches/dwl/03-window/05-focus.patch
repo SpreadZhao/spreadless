@@ -10,10 +10,10 @@ Subject: [PATCH] window/focus: disable sloppy focus and follow windows across
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/config.h b/config.h
-index 36112a9..34ff718 100644
+index 55b0fac..1063958 100644
 --- a/config.h
 +++ b/config.h
-@@ -47,7 +47,7 @@
+@@ -24,7 +24,7 @@
                          ((hex >> 8) & 0xFF) / 255.0f, \
                          (hex & 0xFF) / 255.0f }
  /* appearance */
@@ -23,7 +23,7 @@ index 36112a9..34ff718 100644
  static const unsigned int borderpx         = 1;  /* border pixel of windows */
  static const unsigned int snap             = 32; /* snap pixel */
 diff --git a/dwl.c b/dwl.c
-index 12dff2a..b2efacc 100644
+index e6616a9..bb0ed26 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -3293,8 +3293,10 @@ void

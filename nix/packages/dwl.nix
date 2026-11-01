@@ -19,17 +19,17 @@
   xwayland,
   writeText,
   enableXWayland ? true,
+  settings ? { },
   configHeader ? "",
   upstreamSrc ? ../../upstream/dwl,
   patchesDir ? ../../patches/dwl,
 }:
 
 let
-  headerFile =
-    if builtins.isPath configHeader || lib.isDerivation configHeader then
-      configHeader
-    else
-      writeText "host.h" configHeader;
+  cSettings = import ../lib/c-settings.nix { inherit lib; };
+  headerFile = cSettings.resolveHeader {
+    inherit writeText settings configHeader;
+  };
 
   readPatches = import ../lib/patches.nix { inherit lib; };
   patchFiles = readPatches patchesDir;
@@ -67,7 +67,8 @@ stdenv.mkDerivation {
   ];
 
   preBuild = ''
-    export CPPFLAGS="''${CPPFLAGS:+$CPPFLAGS }-include ${headerFile}"
+    cp ${headerFile} host.h
+    export CPPFLAGS="''${CPPFLAGS:+$CPPFLAGS }-DSPREAD_HOST_HEADER"
   '';
 
   outputs = [

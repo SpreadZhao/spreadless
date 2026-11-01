@@ -4,19 +4,29 @@ Date: Thu, 29 Oct 2026 12:28:49 +0800
 Subject: [PATCH] config/defaults: configure status output defaults
 
 ---
- config.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ config.h | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/config.h b/config.h
-index 100093e..11ed15d 100644
+index 51af97a..c445129 100644
 --- a/config.h
 +++ b/config.h
-@@ -1,13 +1,13 @@
+@@ -1,6 +1,9 @@
  /* See LICENSE file for copyright and license details. */
+ 
+ /* host configuration */
++#define SLSTATUS_INTERVAL            9000
++#define SLSTATUS_ARGS                { datetime, "%s", "%F %T" }
++
+ #ifdef SPREAD_HOST_HEADER
+ #include "host.h"
+ #endif
+@@ -8,13 +11,13 @@
+ #ifndef SLSTATUS_MACROS_ONLY
  
  /* interval between updates (in ms) */
 -const unsigned int interval = 1000;
-+const unsigned int interval = 9000;
++const unsigned int interval = SLSTATUS_INTERVAL;
  
  /* text to show if no value can be retrieved */
 -static const char unknown_str[] = "n/a";
@@ -28,7 +38,7 @@ index 100093e..11ed15d 100644
  
  /*
   * function            description                     argument (example)
-@@ -59,7 +59,7 @@ static const char unknown_str[] = "n/a";
+@@ -66,13 +69,13 @@ static const char unknown_str[] = "n/a";
   * up                  interface is running            interface name (eth0)
   * uptime              system uptime                   NULL
   * username            username of current user        NULL
@@ -37,3 +47,10 @@ index 100093e..11ed15d 100644
   *                                                     NULL on OpenBSD/FreeBSD
   * wifi_essid          WiFi ESSID                      interface name (wlan0)
   * wifi_perc           WiFi signal in percent          interface name (wlan0)
+  */
+ static const struct arg args[] = {
+ 	/* function format          argument */
+-	{ datetime, "%s",           "%F %T" },
++	SLSTATUS_ARGS,
+ };
+ #endif

@@ -83,9 +83,10 @@ enabled by default and can be disabled with
 `wayland.windowManager.dwl.xwayland.enable = false`.
 
 Settings accept booleans, numbers, strings and `{ raw = "..."; }` C expressions
-or initializer lists. Each package receives one generated `host.h`. Direct
-package overrides support `configHeader`; slstatus also accepts a complete
-configuration through `conf`.
+or initializer lists. Each package receives one generated `host.h` included by
+`config.h` through `SPREAD_HOST_HEADER` after the default macro table. Direct
+package overrides support both `settings` and `configHeader`; slstatus also
+accepts a complete configuration through `conf`.
 
 The [dwl reference](skills/spreadless/references/dwl.md) describes layouts,
 bindings, borders, the status bar and tablet support. The

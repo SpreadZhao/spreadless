@@ -10,7 +10,7 @@ reserves usable area for client windows.
  1 file changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/dwl.c b/dwl.c
-index bdc8adf..12db97f 100644
+index 0bcc9a3..e972d7c 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -3421,6 +3421,8 @@ updatemons(struct wl_listener *listener, void *data)

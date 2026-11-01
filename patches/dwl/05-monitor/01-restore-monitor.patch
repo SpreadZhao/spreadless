@@ -17,7 +17,7 @@ Source: https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/restore-mon
  1 file changed, 56 insertions(+), 3 deletions(-)
 
 diff --git a/dwl.c b/dwl.c
-index 153aed4..da4ea44 100644
+index 65356a9..3f38976 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -132,6 +132,10 @@ typedef struct {

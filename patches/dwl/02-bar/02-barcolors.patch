@@ -53,7 +53,7 @@ index e6a7ee5..c74c05f 100644
  .Nm :
  .Bl -tag -width XDG_RUNTIME_DIR
 diff --git a/dwl.c b/dwl.c
-index 33f47df..bdc8adf 100644
+index c6ec00d..0bcc9a3 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -340,7 +340,9 @@ static void destroykeyboardgroup(struct wl_listener *listener, void *data);

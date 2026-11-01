@@ -12,7 +12,7 @@ so wlroots does not emit surface-enter events for an output being destroyed
  1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/dwl.c b/dwl.c
-index 12db97f..3690782 100644
+index e972d7c..bad709b 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -984,6 +984,12 @@ cleanupmon(struct wl_listener *listener, void *data)

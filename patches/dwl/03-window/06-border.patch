@@ -8,28 +8,23 @@ Reserve the larger configured border width in both focus states and update
 only border rectangles when focus changes so client content keeps the same
 size and position. Fullscreen windows reserve no border space.
 ---
- config.h |  9 ++++++++-
+ config.h |  5 ++++-
  dwl.c    | 39 ++++++++++++++++++++++++++++-----------
- 2 files changed, 36 insertions(+), 12 deletions(-)
+ 2 files changed, 32 insertions(+), 12 deletions(-)
 
 diff --git a/config.h b/config.h
-index 34ff718..2d57db4 100644
+index 1063958..c7ff4df 100644
 --- a/config.h
 +++ b/config.h
-@@ -1,6 +1,12 @@
- #ifndef SDWL_ROOTCOLOR
- #define SDWL_ROOTCOLOR 0x000000ff
- #endif
-+#ifndef SDWL_BORDERPX
-+#define SDWL_BORDERPX 2
-+#endif
-+#ifndef SDWL_UNFOCUSED_BORDERPX
-+#define SDWL_UNFOCUSED_BORDERPX 0
-+#endif
- #ifndef SDWL_NORM_FG
- #define SDWL_NORM_FG 0xd4d4d4ff
- #endif
-@@ -49,7 +55,8 @@
+@@ -1,5 +1,7 @@
+ /* host configuration */
+ #define SDWL_ROOTCOLOR              0x000000ff
++#define SDWL_BORDERPX               2
++#define SDWL_UNFOCUSED_BORDERPX     0
+ #define SDWL_NORM_FG                0xd4d4d4ff
+ #define SDWL_NORM_BG                0x000000ff
+ #define SDWL_NORM_BORDER            0x72737aff
+@@ -26,7 +28,8 @@
  /* appearance */
  static const int sloppyfocus               = 0;  /* focus follows mouse */
  static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
@@ -40,7 +35,7 @@ index 34ff718..2d57db4 100644
  static const int showbar                   = 1; /* 0 means no bar */
  static const int topbar                    = 1; /* 0 means bottom bar */
 diff --git a/dwl.c b/dwl.c
-index b2efacc..0310887 100644
+index bb0ed26..b5a2a32 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -385,6 +385,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);

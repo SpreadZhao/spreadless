@@ -9,10 +9,10 @@ Subject: [PATCH] input/cursor-size: make XCursor size configurable
  2 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/config.h b/config.h
-index 76e65f4..c1085da 100644
+index e9ad44b..f032e76 100644
 --- a/config.h
 +++ b/config.h
-@@ -58,6 +58,7 @@ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will
+@@ -32,6 +32,7 @@ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will
  static const unsigned int borderpx         = SDWL_BORDERPX; /* visible border width when focused */
  static const unsigned int unfocused_borderpx = SDWL_UNFOCUSED_BORDERPX;
  static const unsigned int snap             = 32; /* snap pixel */
@@ -21,7 +21,7 @@ index 76e65f4..c1085da 100644
  static const int showbar                   = 1; /* 0 means no bar */
  static const int topbar                    = 1; /* 0 means bottom bar */
 diff --git a/dwl.c b/dwl.c
-index 4d61ef4..f6c9679 100644
+index 932b4ca..153abdb 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -3071,8 +3071,12 @@ setup(void)

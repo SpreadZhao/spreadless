@@ -9,19 +9,19 @@ Subject: [PATCH] input/primary-selection: allow disabling primary selection
  2 files changed, 3 insertions(+)
 
 diff --git a/config.h b/config.h
-index 6441463..76e65f4 100644
+index 4e0cab6..e9ad44b 100644
 --- a/config.h
 +++ b/config.h
-@@ -58,6 +58,7 @@ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will
+@@ -32,6 +32,7 @@ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will
  static const unsigned int borderpx         = SDWL_BORDERPX; /* visible border width when focused */
  static const unsigned int unfocused_borderpx = SDWL_UNFOCUSED_BORDERPX;
  static const unsigned int snap             = 32; /* snap pixel */
 +static const int enable_primary_selection  = 0;  /* 0 disables middle-click primary selection */
  static const int showbar                   = 1; /* 0 means no bar */
  static const int topbar                    = 1; /* 0 means bottom bar */
- static const char *fonts[]                 = {
+ static const int bar_hpad                  = SDWL_BAR_HPAD;
 diff --git a/dwl.c b/dwl.c
-index 3ca6c9e..4d61ef4 100644
+index d6a2466..932b4ca 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -2891,6 +2891,8 @@ setpsel(struct wl_listener *listener, void *data)

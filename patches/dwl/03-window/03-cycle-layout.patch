@@ -8,7 +8,7 @@ Subject: [PATCH] window/cycle-layout: cycle through tiled layouts
  1 file changed, 17 insertions(+)
 
 diff --git a/dwl.c b/dwl.c
-index 21b7795..9b47ae6 100644
+index dc662c6..30cead6 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -327,6 +327,7 @@ static void createpopup(struct wl_listener *listener, void *data);

@@ -11,7 +11,7 @@ outputs disconnect and reconnect in sequence.
  1 file changed, 17 insertions(+), 10 deletions(-)
 
 diff --git a/dwl.c b/dwl.c
-index da4ea44..4b93b7a 100644
+index 3f38976..f42ef13 100644
 --- a/dwl.c
 +++ b/dwl.c
 @@ -1152,14 +1152,17 @@ closemon(Monitor *m)

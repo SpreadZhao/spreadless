@@ -5,7 +5,8 @@
 | Group | Patch | Responsibility |
 | --- | --- | --- |
 | `01-config` | `config/init` | Initial tracked copy of the upstream configuration |
-| `01-config` | `config/defaults` | Refresh interval, unknown-value text and output length defaults |
+| `01-config` | `config/host-config` | Compile-time `SPREAD_HOST_HEADER` include for `host.h` and `SLSTATUS_MACROS_ONLY` guard |
+| `01-config` | `config/defaults` | Refresh interval, unknown-value text, output length and default component macros |
 | `02-battery` | `battery/state-buffer` | Power supply status buffer size fix for 12-character state strings |
 | `02-battery` | `battery/battery-icon` | Battery percentage and state icon component (`battery_icon`) |
 | `03-temperature` | `temperature/cpu-temp` | CPU sensor discovery, caching, temperature icons and threshold colors (`cpu_temp`) |
@@ -13,7 +14,8 @@
 ## Packaging
 
 slstatus uses the Nixpkgs build definition through `override` and `overrideAttrs`.
-`conf` replaces the build copy of `config.h`; `configHeader` enters through
+`conf` replaces the build copy of `config.h`; the build copies the generated
+`host.h` into the source tree and passes `-DSPREAD_HOST_HEADER` through
 `NIX_CFLAGS_COMPILE` because upstream `config.mk` defines `CPPFLAGS`. Home Manager
 options are under `programs.slstatus`. The unconfigured package displays the
 upstream date-and-time component and refreshes every nine seconds.
@@ -34,11 +36,14 @@ upstream date-and-time component and refreshes every nine seconds.
   `SLSTATUS_TEMP_COLOR_WARNING` and `SLSTATUS_TEMP_COLOR_CRITICAL` to six-digit
   hexadecimal strings.
 
-For direct package configuration, `conf` accepts full `config.h` contents or a
-file. `configHeader` accepts header contents or a file containing `SLSTATUS_*`
-definitions. The Home Manager `settings` option generates that header. Booleans
-become `0` or `1`, numbers are emitted as written, strings are quoted, and
-`{ raw = "..."; }` supplies a C expression.
+For direct package configuration, `settings` accepts `SLSTATUS_*` values,
+`configHeader` accepts header contents or a file, and `conf` accepts full
+`config.h` contents or a file. The Home Manager module writes `interval`,
+`components` (`SLSTATUS_INTERVAL` and `SLSTATUS_ARGS`) and `settings` as
+`#undef` and `#define` pairs in one generated `host.h` included through
+`SPREAD_HOST_HEADER` in `config.h`. Booleans become `0` or `1`, numbers are
+emitted as written, strings are quoted, and `{ raw = "..."; }` supplies a C
+expression.
 
 The battery icons adapt the community [icons patch](https://tools.suckless.org/slstatus/patches/icons/)
 by sewn. The series also includes the upstream

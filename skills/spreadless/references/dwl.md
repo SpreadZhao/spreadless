@@ -5,6 +5,7 @@
 | Group | Patch | Responsibility |
 | --- | --- | --- |
 | `01-config` | `config/init` | Initial tracked copy of the upstream configuration |
+| `01-config` | `config/host-config` | Compile-time `SPREAD_HOST_HEADER` include for `host.h` in `config.h` |
 | `02-bar` | `bar/status-bar` | Per-output bar rendering (`drwl.h`), fonts, padding, click targets and bounded newline status reader |
 | `02-bar` | `bar/barcolors` | Status text `^fg(RRGGBB)` and `^bg(RRGGBB)` color markup |
 | `02-bar` | `bar/usable-area` | Bar geometry refresh before arranging layers and client usable areas |
@@ -25,7 +26,7 @@
 | `05-monitor` | `monitor/cascade-restore` | Preservation of original output ownership and saved geometry across cascading disconnections |
 | `05-monitor` | `monitor/output-move` | Floating and saved window geometry offset updates when an active output moves in the layout |
 | `06-keys` | `keys/wm-bindings` | `Super` modifier, window-management, tag, layout, bar, monitor, VT and mouse bindings |
-| `06-keys` | `keys/spawn-bindings` | Terminal, launcher, lock, screenshot, clipboard, notification and media/backlight command bindings |
+| `06-keys` | `keys/spawn-bindings` | Terminal, launcher, lock, screenshot, clipboard, tray, notification and media/backlight command bindings |
 
 The `06-keys` group is last in the dwl queue. It owns the final `keys[]`,
 `buttons[]` and `axes[]` tables in `config.h`. Define feature callbacks in their
@@ -35,9 +36,10 @@ in `06-keys`; feature patches must leave the binding tables unchanged.
 ## Packaging
 
 dwl uses a standalone Nix derivation with wlroots 0.20 and optional XWayland
-support. Queue checks always compile with XWayland enabled. `configHeader` is
-injected through `CPPFLAGS -include`; keep this packaging separate from
-slstatus. Home Manager options are under `wayland.windowManager.dwl`.
+support. Queue checks always compile with XWayland enabled. The build copies the
+generated `host.h` into the source tree and sets `CPPFLAGS -DSPREAD_HOST_HEADER`;
+keep this packaging separate from slstatus. Home Manager options are under
+`wayland.windowManager.dwl`.
 
 ## Configuration and behavior
 
@@ -49,10 +51,11 @@ caller supplies the login entry, session lifecycle and status producer, and uses
 
 `settings` accepts `SDWL_*` macro names. Booleans become `0` or `1`, numbers are
 emitted as C literals, strings are quoted, and `{ raw = "..."; }` supplies a
-single-line C expression or initializer list. Empty settings use `config.h`
-defaults. All settings enter through one generated `host.h`, passed with
-`CPPFLAGS -include`. For direct package builds, `configHeader` accepts C header
-text, a Nix path to a header, or a derivation that produces one.
+single-line C expression or initializer list. Empty settings use the `SDWL_*`
+defaults at the top of `config.h`. Configured settings emit `#undef` and
+`#define` pairs in one generated `host.h` included through `SPREAD_HOST_HEADER`.
+Direct package overrides accept both `settings` and `configHeader` (C header
+text, a Nix path to a header, or a derivation that produces one).
 
 `SDWL_TOUCHPAD_SCROLL_FACTOR` defaults to `1.0` and scales finger scrolling only.
 Mouse wheel events keep their original delta. Display layouts can be applied by
@@ -163,9 +166,10 @@ to dwl 0.9 and wlroots 0.20.
 
 `Super+Shift+A` runs `$SCRIPT_HOME/util/screenshot.sh`;
 `Super+Ctrl+Shift+A` runs it with `-o`.
-`Super+Shift+V` runs `$SCRIPT_HOME/util/clipboard_history.sh`, and `Super+Z`
-launches shmooz. `SCRIPT_HOME` defaults to `$HOME/scripts`. The caller supplies
-these scripts and applications.
+`Super+Shift+V` runs `$SCRIPT_HOME/util/clipboard_history.sh`, `Super+T` runs
+`$SCRIPT_HOME/dwl/tray.sh`, `Super+Ctrl+Shift+N` runs
+`notification-history browse`, and `Super+Z` launches shmooz. `SCRIPT_HOME`
+defaults to `$HOME/scripts`. The caller supplies these scripts and applications.
 
 `Super+Shift+C` closes the focused window, and `Super+Shift+Q` exits dwl.
 `Super+Ctrl+F1` through `Super+Ctrl+F12` select Linux virtual terminals.

@@ -4,48 +4,29 @@ Date: Thu, 29 Oct 2026 12:18:32 +0800
 Subject: [PATCH] window/theme: configure desktop color macros
 
 ---
- config.h | 40 +++++++++++++++++++++++++++++++++++-----
- 1 file changed, 35 insertions(+), 5 deletions(-)
+ config.h | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
 diff --git a/config.h b/config.h
-index 85f0bab..651dba4 100644
+index 593d64a..f24e85e 100644
 --- a/config.h
 +++ b/config.h
-@@ -1,3 +1,33 @@
-+#ifndef SDWL_ROOTCOLOR
-+#define SDWL_ROOTCOLOR 0x000000ff
-+#endif
-+#ifndef SDWL_NORM_FG
-+#define SDWL_NORM_FG 0xd4d4d4ff
-+#endif
-+#ifndef SDWL_NORM_BG
-+#define SDWL_NORM_BG 0x000000ff
-+#endif
-+#ifndef SDWL_NORM_BORDER
-+#define SDWL_NORM_BORDER 0x72737aff
-+#endif
-+#ifndef SDWL_SEL_FG
-+#define SDWL_SEL_FG 0xffc66dff
-+#endif
-+#ifndef SDWL_SEL_BG
-+#define SDWL_SEL_BG 0x3a3a3aff
-+#endif
-+#ifndef SDWL_SEL_BORDER
-+#define SDWL_SEL_BORDER 0xffffffff
-+#endif
-+#ifndef SDWL_URG_FG
-+#define SDWL_URG_FG 0xffffffff
-+#endif
-+#ifndef SDWL_URG_BG
-+#define SDWL_URG_BG 0xff0000ff
-+#endif
-+#ifndef SDWL_URG_BORDER
-+#define SDWL_URG_BORDER 0xff0000ff
-+#endif
- #ifndef SDWL_FONT
- #define SDWL_FONT "Noto Sans:size=14"
- #endif
-@@ -27,14 +57,14 @@ static const char *fonts[]                 = {
+@@ -1,4 +1,14 @@
+ /* host configuration */
++#define SDWL_ROOTCOLOR              0x000000ff
++#define SDWL_NORM_FG                0xd4d4d4ff
++#define SDWL_NORM_BG                0x000000ff
++#define SDWL_NORM_BORDER            0x72737aff
++#define SDWL_SEL_FG                 0xffc66dff
++#define SDWL_SEL_BG                 0x3a3a3aff
++#define SDWL_SEL_BORDER             0xffffffff
++#define SDWL_URG_FG                 0xffffffff
++#define SDWL_URG_BG                 0xff0000ff
++#define SDWL_URG_BORDER             0xff0000ff
+ #define SDWL_FONT                   "Noto Sans:size=14"
+ #define SDWL_FONT_FALLBACKS         "Noto Sans CJK SC:size=14", "Symbols Nerd Font:size=14", "Noto Color Emoji:size=14"
+ #define SDWL_BAR_HPAD               2
+@@ -26,14 +36,14 @@ static const char *fonts[]                 = {
  	SDWL_FONT,
  	SDWL_FONT_FALLBACKS,
  };

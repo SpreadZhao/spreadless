@@ -7,7 +7,6 @@
 let
   cfg = config.wayland.windowManager.dwl;
   cSettings = import ../lib/c-settings.nix { inherit lib; };
-  header = cSettings.renderHeader cfg.settings;
 in
 {
   options.wayland.windowManager.dwl = {
@@ -17,9 +16,7 @@ in
       default = pkgs.callPackage ../packages/dwl.nix { };
       description = "Base dwl package configured by this module.";
     };
-    settings = lib.mkOption {
-      type = lib.types.attrsOf cSettings.valueType;
-      default = { };
+    settings = cSettings.mkSettingsOption {
       example = {
         SDWL_FONT = "Noto Sans:size=14";
         SDWL_BAR_HPAD = 2;
@@ -54,7 +51,7 @@ in
       type = lib.types.package;
       readOnly = true;
       default = cfg.package.override {
-        configHeader = header;
+        inherit (cfg) settings;
         enableXWayland = cfg.xwayland.enable;
       };
       description = "dwl package with the configured macros and XWayland setting.";
@@ -62,12 +59,11 @@ in
   };
   config = lib.mkIf cfg.enable {
     assertions = [
-      {
-        assertion = lib.all (name: builtins.match "SDWL_[A-Z0-9_]+" name != null) (
-          builtins.attrNames cfg.settings
-        );
-        message = "dwl settings must use SDWL_* macro names.";
-      }
+      (cSettings.mkPrefixAssertion {
+        prefix = "SDWL";
+        program = "dwl";
+        inherit (cfg) settings;
+      })
     ];
     home.packages = [ cfg.finalPackage ];
   };

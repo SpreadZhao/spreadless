@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SpreadZhao <spreadzhao@outlook.com>
+Date: Thu, 29 Oct 2026 12:28:49 +0800
+Subject: [PATCH] config/host-config: add compile-time host header hook
+
+---
+ Makefile | 2 +-
+ config.h | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 7a18274..b4e8c68 100644
+--- a/Makefile
++++ b/Makefile
+@@ -31,7 +31,7 @@ COM =\
+ 
+ all: slstatus
+ 
+-$(COM:=.o): config.mk $(REQ:=.h) slstatus.h
++$(COM:=.o): config.mk $(REQ:=.h) slstatus.h config.h
+ slstatus.o: slstatus.c slstatus.h arg.h config.h config.mk $(REQ:=.h)
+ 
+ .c.o:
+diff --git a/config.h b/config.h
+index 100093e..51af97a 100644
+--- a/config.h
++++ b/config.h
+@@ -1,5 +1,12 @@
+ /* See LICENSE file for copyright and license details. */
+ 
++/* host configuration */
++#ifdef SPREAD_HOST_HEADER
++#include "host.h"
++#endif
++
++#ifndef SLSTATUS_MACROS_ONLY
++
+ /* interval between updates (in ms) */
+ const unsigned int interval = 1000;
+ 
+@@ -68,3 +75,4 @@ static const struct arg args[] = {
+ 	/* function format          argument */
+ 	{ datetime, "%s",           "%F %T" },
+ };
++#endif
